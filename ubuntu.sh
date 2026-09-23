@@ -20,7 +20,7 @@ NIC=enp12s0
 LUKS=/dev/nvme1n1p3   # nvme1n1 is the 931GB Ubuntu drive; nvme0n1 is Windows
 
 # --- third-party repositories -------------------------------------------------
-# Everything else comes from the Ubuntu archive. These three don't ship there.
+# Everything else comes from the Ubuntu archive. These don't ship there.
 
 if [ ! -f /etc/apt/sources.list.d/1password.list ]; then
   curl -sS https://downloads.1password.com/linux/keys/1password.asc \
@@ -35,6 +35,14 @@ if [ ! -f /etc/apt/sources.list.d/mise.list ]; then
     | sudo gpg --dearmor -o /etc/apt/keyrings/mise-archive-keyring.gpg
   echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/mise-archive-keyring.gpg] https://mise.jdx.dev/deb stable main" \
     | sudo tee /etc/apt/sources.list.d/mise.list >/dev/null
+fi
+
+if [ ! -f /etc/apt/sources.list.d/vscode.list ]; then
+  sudo install -dm755 /etc/apt/keyrings
+  curl -fsSL https://packages.microsoft.com/keys/microsoft.asc \
+    | sudo gpg --dearmor -o /etc/apt/keyrings/microsoft.gpg
+  echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/code stable main" \
+    | sudo tee /etc/apt/sources.list.d/vscode.list >/dev/null
 fi
 
 command -v tailscale >/dev/null || curl -fsSL https://tailscale.com/install.sh | sh
@@ -66,7 +74,8 @@ if snap list firefox >/dev/null 2>&1; then sudo snap remove --purge firefox; fi
 # time it's used, and "ready to work" doesn't mean "37 updates pending".
 sudo apt update
 sudo apt upgrade -y
-sudo apt install -y git tmux ghostty deja-dup docker.io tpm2-tools 1password mise
+sudo apt install -y git tmux ghostty deja-dup docker.io tpm2-tools \
+                    1password mise code
 
 # --allow-downgrades because Ubuntu's `firefox` stub carries an epoch
 # (1:1snap1-...) and Mozilla's real version does not, so apt scores the genuine
