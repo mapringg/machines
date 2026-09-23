@@ -52,8 +52,9 @@ bedroom and the LED is annoying at night.
 **Access.** Tailscale SSH, so there are no host keys to manage. tmux so a dropped
 connection never loses work.
 
-**Backups.** Déjà Dup to an external drive, ~30 day retention. It is *not* in the
-installer's Default selection, so `ubuntu.sh` installs it.
+**Backups.** Déjà Dup to an external USB drive, daily, 30 days kept, encrypted.
+It is *not* in the installer's Default selection, so `ubuntu.sh` installs and
+configures it. Everything is gsettings, so nothing about it lives in a GUI only.
 
 ## Desktop BIOS
 
@@ -100,8 +101,9 @@ the 80 °C → 100% point is the safety net and shouldn't move.
   Windows at all, so I'd need a second mechanism anyway.
 - **Sway or a minimal WM** — would mean writing a WM config from scratch. Stock GNOME is
   less deviation, which matters more than saving RAM. Resources were never the constraint.
-- **restic / borg** — repository, password, timer and retention is four moving parts.
-  Déjà Dup is one apt package and a GUI, and it is enough for what's on this machine.
+- **restic / borg by hand** — repository, password, timer and retention is four
+  moving parts to own. Déjà Dup 50 *is* restic underneath — the destination is a
+  real restic repository — so this gets the same engine with none of the wiring.
 - **Syncthing** — replication, not backup. Dropped with Omarchy.
 - **Headless desktop** — I'm a web developer; I need a browser at the desk. The NVIDIA
   card also idles *higher* headless, so it saves nothing.
