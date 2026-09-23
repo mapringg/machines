@@ -40,6 +40,35 @@ connection never loses work.
 
 **Backups.** Déjà Dup (ships with Ubuntu) to an external drive, ~30 day retention.
 
+## Desktop BIOS
+
+MSI PRO B650-P WIFI (MS-7D78). Shared by both OSes, so it lives here rather than in
+either script. After a CMOS reset, only these differ from defaults:
+
+- **EXPO / A-XMP → Profile 1.** A reset drops DDR5 to the JEDEC default of 4800 MT/s
+  and silently loses the 5200 the kit is rated for.
+- **ErP Ready → Disabled.** ErP cuts standby power to the NIC and Wake-on-LAN dies
+  with it.
+- **Resume By PCI-E Device → Enabled.** This is the Wake-on-LAN toggle on MSI boards.
+
+Already correct at default, but worth confirming: Re-Size BAR enabled, Secure Boot on,
+AMD fTPM on, CSM disabled.
+
+**Fan curves.** Both headers set to PWM with Smart Fan Mode on. A CMOS reset wipes
+these, and the machine is in my bedroom.
+
+| | CPU_FAN | SYS_FAN |
+|---|---|---|
+| | 0 °C → 20% | 40 °C → 30% |
+| | 45 °C → 35% | 55 °C → 45% |
+| | 65 °C → 50% | 70 °C → 70% |
+| | 80 °C → 100% | 85 °C → 100% |
+
+SYS_FAN reads the motherboard sensor, which idles around 35–45 °C — so a curve that
+starts at 50% duty runs the case fans hard permanently. The CPU curve stays flat
+through 65 °C because the 7800X3D sits in the 55–70 °C band during ordinary dev work;
+the 80 °C → 100% point is the safety net and shouldn't move.
+
 ## Considered and rejected
 
 - **Buying a mini PC / home server** — nothing under ~40,000 THB beats the 7800X3D I

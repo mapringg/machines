@@ -3,7 +3,7 @@
 # Ubuntu 26.04.1 LTS Desktop, stock GNOME. Safe to re-run.
 #
 # MANUAL STEPS — do these first, they can't be scripted:
-#   BIOS      Wake-on-LAN enabled; ErP / deep-sleep disabled (else WoL dies)
+#   BIOS      see README — shared with windows.ps1
 #   Installer LUKS encryption on, ext4, hostname `ubuntu`
 #            (delete all partitions on BOTH disks during the Windows install first,
 #             so Windows can't hijack an EFI partition on this drive)

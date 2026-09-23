@@ -3,8 +3,7 @@
 # Run as Administrator. Safe to re-run.
 #
 # MANUAL STEPS — do these first:
-#   BIOS       EXPO profile 1 (5200 MT/s), ErP Ready disabled, Resume By PCI-E Device
-#              enabled, Re-Size BAR enabled. Secure Boot + fTPM stay on (board default).
+#   BIOS       see README — shared with ubuntu.sh
 #   USB        Rufus, GPT / UEFI. In "Windows User Experience" check ONLY
 #              "remove requirement for an online Microsoft account".
 #              Do NOT bypass TPM/Secure Boot — this machine has both.
