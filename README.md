@@ -38,7 +38,8 @@ annoying at night.
 **Access.** Tailscale SSH, so there are no host keys to manage. tmux so a dropped
 connection never loses work.
 
-**Backups.** Déjà Dup (ships with Ubuntu) to an external drive, ~30 day retention.
+**Backups.** Déjà Dup to an external drive, ~30 day retention. It is *not* in the
+installer's Default selection, so `ubuntu.sh` installs it.
 
 ## Desktop BIOS
 
@@ -82,9 +83,12 @@ the 80 °C → 100% point is the safety net and shouldn't move.
 - **Sway or a minimal WM** — would mean writing a WM config from scratch. Stock GNOME is
   less deviation, which matters more than saving RAM. Resources were never the constraint.
 - **restic / borg** — repository, password, timer and retention is four moving parts.
-  Déjà Dup is already installed.
+  Déjà Dup is one apt package and a GUI, and it is enough for what's on this machine.
 - **Syncthing** — replication, not backup. Dropped with Omarchy.
 - **Headless desktop** — I'm a web developer; I need a browser at the desk. The NVIDIA
   card also idles *higher* headless, so it saves nothing.
+- **The Firefox snap** — kept as long as possible, but a confined snap can't execute
+  `/opt/1Password/1Password-BrowserSupport`, so the browser extension can never reach
+  the desktop app. `ubuntu.sh` uses Mozilla's deb and pins it.
 - **Autologin** — not needed. Remote work is terminal-only, and SSH works fine with the
   machine sitting at a login screen. An un-logged-in desktop costs no RAM.
