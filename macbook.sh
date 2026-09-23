@@ -23,6 +23,13 @@
 #   Log out    key repeat only applies to a new login session.
 set -euo pipefail
 
+# --- hostname -----------------------------------------------------------------
+# macOS keeps three separate names (Sharing, Bonjour .local, and the shell's
+# hostname); Setup Assistant derives all of them from the account name.
+sudo scutil --set ComputerName macbook
+sudo scutil --set LocalHostName macbook
+sudo scutil --set HostName macbook
+
 # --- command line tools -------------------------------------------------------
 xcode-select -p >/dev/null 2>&1 || xcode-select --install
 
