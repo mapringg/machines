@@ -36,12 +36,7 @@ if ! command -v brew >/dev/null 2>&1; then
 fi
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
-brew install --cask --adopt 1password ghostty tailscale visual-studio-code
-
-# Ghostty replaces Terminal.app because it bundles a Nerd Font, so eza's icons
-# render over ssh. Terminal.app cannot draw Nerd Font v3 glyphs at all.
-mkdir -p ~/.config/ghostty
-echo "theme = TokyoNight" > ~/.config/ghostty/config
+brew install --cask --adopt 1password tailscale visual-studio-code
 
 # --- Claude Code --------------------------------------------------------------
 command -v claude >/dev/null 2>&1 || curl -fsSL https://claude.ai/install.sh | bash

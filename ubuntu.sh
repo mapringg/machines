@@ -70,13 +70,13 @@ fi
 if snap list firefox >/dev/null 2>&1; then sudo snap remove --purge firefox; fi
 
 # --- packages -----------------------------------------------------------------
-# ghostty, docker.io, deja-dup and tmux are all in the 26.04 archive, so no
-# vendor repo is needed for them.
+# docker.io, deja-dup and tmux are all in the 26.04 archive, so no vendor repo
+# is needed for them.
 # The upgrade is here because an install image is always months behind by the
 # time it's used, and "ready to work" doesn't mean "37 updates pending".
 sudo apt update
 sudo apt upgrade -y
-sudo apt install -y git tmux ghostty deja-dup docker.io tpm2-tools \
+sudo apt install -y git tmux deja-dup docker.io tpm2-tools \
                     1password mise code
 
 # --allow-downgrades because Ubuntu's `firefox` stub carries an epoch
