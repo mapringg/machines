@@ -78,6 +78,10 @@ sudo apt install -y --allow-downgrades firefox
 gsettings set org.gnome.shell favorite-apps \
   "$(gsettings get org.gnome.shell favorite-apps | sed 's/firefox_firefox.desktop/firefox.desktop/')"
 
+# Alphabetical app grid. GNOME orders it by install time and keeps a saved
+# layout; clearing the layout is what makes it sort.
+gsettings set org.gnome.shell app-picker-layout "[]"
+
 sudo usermod -aG docker "$USER"   # takes effect at next login
 
 # --- git and mise -------------------------------------------------------------
