@@ -51,6 +51,10 @@ either script. After a CMOS reset, only these differ from defaults:
 - **ErP Ready → Disabled.** ErP cuts standby power to the NIC and Wake-on-LAN dies
   with it.
 - **Resume By PCI-E Device → Enabled.** This is the Wake-on-LAN toggle on MSI boards.
+- **Boot Option #1 → `ubuntu`.** The Windows install puts its own entry first, and
+  this board re-asserts its own priority list over whatever `efibootmgr` sets from
+  Linux — so the OS can't fix this, only the firmware can. Set it in *UEFI Hard Disk
+  Drive BBS Priorities* too; changing only the top-level list silently reverts.
 
 Already correct at default, but worth confirming: Re-Size BAR enabled, Secure Boot on,
 AMD fTPM on, CSM disabled.

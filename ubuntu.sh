@@ -67,32 +67,14 @@ sudo apt install -y --allow-downgrades firefox
 sudo usermod -aG docker "$USER"   # takes effect at next login
 
 # --- Wake-on-LAN --------------------------------------------------------------
-# Two separate switches, and the machine only wakes if both are on: the r8169
-# driver's own WoL mode, and PCI wakeup for the device, which defaults to
-# `disabled`. Re-applied on every boot because neither survives one.
-sudo tee /etc/systemd/system/wake-on-lan.service >/dev/null <<SERVICE
-[Unit]
-Description=Arm Wake-on-LAN on $NIC
-After=network.target
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-ExecStart=/usr/sbin/ethtool -s $NIC wol g
-ExecStart=/bin/sh -c 'echo enabled > /sys/class/net/$NIC/device/power/wakeup'
-
-[Install]
-WantedBy=multi-user.target
-SERVICE
-sudo systemctl daemon-reload
-sudo systemctl enable --now wake-on-lan.service
-
-# --- boot order ---------------------------------------------------------------
-# The Windows install left its own entry first. Put Ubuntu ahead of it; GRUB
-# still offers Windows from the menu.
-UBUNTU_ENTRY=$(efibootmgr | sed -n 's/^Boot\([0-9A-F]\{4\}\)\*\?[[:space:]]*Ubuntu[[:space:]].*/\1/p' | head -1)
-OTHERS=$(efibootmgr | sed -n 's/^BootOrder: //p' | tr ',' '\n' | grep -v "^$UBUNTU_ENTRY$" | paste -sd, -)
-sudo efibootmgr -o "$UBUNTU_ENTRY${OTHERS:+,$OTHERS}" >/dev/null
+# NetworkManager owns this NIC and re-applies its ethernet settings a couple of
+# seconds into boot, so anything set behind its back — a systemd unit, a udev
+# rule — is silently undone. Setting it on the connection is what sticks, and it
+# also flips the PCI device's power/wakeup, which defaults to `disabled` and is
+# the half that actually breaks Wake-on-LAN.
+CON=$(nmcli -t -f NAME,DEVICE con show | awk -F: -v d="$NIC" '$2==d{print $1; exit}')
+sudo nmcli con mod "$CON" 802-3-ethernet.wake-on-lan magic
+sudo nmcli con up "$CON" >/dev/null   # brief link bounce
 
 # --- LUKS auto-unlock via TPM -------------------------------------------------
 # Bound to PCR7 (Secure Boot state), so kernel updates don't invalidate it but
