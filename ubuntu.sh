@@ -12,6 +12,8 @@
 #              first, so Windows can't put its boot files on this drive.
 #   After      sign in to 1Password, then Tailscale; point Déjà Dup at the
 #              external drive; restore ~/.ssh, ~/Work and the .env files.
+#
+# Close Firefox before running: removing the snap fails while it is open.
 set -euo pipefail
 
 NIC=enp12s0
@@ -37,6 +39,11 @@ fi
 
 command -v tailscale >/dev/null || curl -fsSL https://tailscale.com/install.sh | sh
 
+# --ssh is what removes host-key management entirely; without it this machine is
+# on the tailnet but not reachable the way the rest of the setup assumes.
+# Prints a URL to authenticate in the browser, so 1Password has to be signed in.
+tailscale status >/dev/null 2>&1 || sudo tailscale up --ssh
+
 # Firefox from Mozilla, not the Ubuntu snap. A confined snap can't execute
 # /opt/1Password/1Password-BrowserSupport, so the extension can never reach the
 # desktop app and every unlock has to be done twice. Pinned so the `firefox`
@@ -55,12 +62,14 @@ if snap list firefox >/dev/null 2>&1; then sudo snap remove --purge firefox; fi
 # --- packages -----------------------------------------------------------------
 # ghostty, docker.io, deja-dup and tmux are all in the 26.04 archive, so no
 # vendor repo is needed for them.
+# The upgrade is here because an install image is always months behind by the
+# time it's used, and "ready to work" doesn't mean "37 updates pending".
 sudo apt update
-sudo apt install -y git tmux ghostty deja-dup docker.io ethtool \
-                    tpm2-tools 1password mise
+sudo apt upgrade -y
+sudo apt install -y git tmux ghostty deja-dup docker.io tpm2-tools 1password mise
 
 # --allow-downgrades because Ubuntu's `firefox` stub carries an epoch
-# (1:1snap1-...) and Mozilla's real 154.0 does not, so apt scores the genuine
+# (1:1snap1-...) and Mozilla's real version does not, so apt scores the genuine
 # package as older. The pin already decided which one we want.
 sudo apt install -y --allow-downgrades firefox
 
