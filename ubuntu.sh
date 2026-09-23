@@ -93,6 +93,17 @@ gsettings set org.gnome.shell favorite-apps \
 # layout; clearing the layout is what makes it sort.
 gsettings set org.gnome.shell app-picker-layout "[]"
 
+# Flat pointer, no acceleration. GNOME's default is libinput's adaptive curve,
+# which is neither Windows' curve nor off, so small moves land slightly wrong
+# for a hand trained on the Windows side of this same desk. Pointer speed is
+# left at default; set it in Settings → Mouse if it feels off.
+gsettings set org.gnome.desktop.peripherals.mouse accel-profile 'flat'
+
+# Desktop Icons. Nothing lives on the desktop, and it hitches clicks and drags
+# on the background. Ubuntu enables it from the session mode, so disabling it
+# is what sticks — it lands in org.gnome.shell disabled-extensions.
+gnome-extensions disable ding@rastersoft.com
+
 sudo usermod -aG docker "$USER"   # takes effect at next login
 
 # --- Claude Code --------------------------------------------------------------
