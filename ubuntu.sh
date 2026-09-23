@@ -71,6 +71,13 @@ gsettings set org.gnome.shell favorite-apps \
 
 sudo usermod -aG docker "$USER"   # takes effect at next login
 
+# --- git and mise -------------------------------------------------------------
+git config --global user.name mapringg
+git config --global user.email work@mapringg.com
+
+# mise is inert until it's hooked into the shell.
+grep -q 'mise activate' ~/.bashrc || echo 'eval "$(mise activate bash)"' >> ~/.bashrc
+
 # --- Wake-on-LAN --------------------------------------------------------------
 # NetworkManager owns this NIC and re-applies its ethernet settings a couple of
 # seconds into boot, so anything set behind its back — a systemd unit, a udev
