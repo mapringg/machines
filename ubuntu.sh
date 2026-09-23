@@ -64,6 +64,11 @@ sudo apt install -y git tmux ghostty deja-dup docker.io ethtool \
 # package as older. The pin already decided which one we want.
 sudo apt install -y --allow-downgrades firefox
 
+# The dock's favourites still name the snap's app id, which no longer exists,
+# leaving a dead icon where Firefox used to be. Same slot, real package.
+gsettings set org.gnome.shell favorite-apps \
+  "$(gsettings get org.gnome.shell favorite-apps | sed 's/firefox_firefox.desktop/firefox.desktop/')"
+
 sudo usermod -aG docker "$USER"   # takes effect at next login
 
 # --- Wake-on-LAN --------------------------------------------------------------
