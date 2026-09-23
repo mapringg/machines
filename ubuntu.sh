@@ -10,8 +10,10 @@
 #              "Encrypt with passphrase"; hostname `ubuntu`, user `mapring`.
 #              Delete all partitions on BOTH disks during the Windows install
 #              first, so Windows can't put its boot files on this drive.
-#   After      sign in to 1Password, then Tailscale; point Déjà Dup at the
-#              external drive; restore ~/.ssh, ~/Work and the .env files.
+#   Drive      format the external drive ext4, label `Backup`, then mount it
+#              from Files and `sudo chown $USER /run/media/$USER/Backup`.
+#   After      sign in to 1Password, then Tailscale; restore ~/.ssh, ~/Work and
+#              the .env files; run the first backup from Déjà Dup.
 #
 # Close Firefox before running: removing the snap fails while it is open.
 set -euo pipefail
@@ -123,6 +125,19 @@ polkit.addRule(function(action, subject) {
     }
 });
 RULES
+
+# --- backups ------------------------------------------------------------------
+# Déjà Dup to the external drive: everything in $HOME, daily, 30 days kept.
+# The drive is ext4 labelled `Backup` and has to be formatted and mounted by
+# hand first — a fresh ext4 is root-owned, so it also needs a chown before Déjà
+# Dup can write to it. 26.04 mounts removable media under /run/media, not /media.
+gsettings set org.gnome.DejaDup backend 'local'
+gsettings set org.gnome.DejaDup.Local folder "/run/media/$USER/Backup/ubuntu"
+gsettings set org.gnome.DejaDup include-list "['\$HOME']"
+gsettings set org.gnome.DejaDup exclude-list "['\$TRASH', '\$DOWNLOAD', '\$HOME/Backup', '\$HOME/.cache', '\$HOME/snap']"
+gsettings set org.gnome.DejaDup periodic true
+gsettings set org.gnome.DejaDup periodic-period 1
+gsettings set org.gnome.DejaDup delete-after 30
 
 # --- LUKS auto-unlock via TPM -------------------------------------------------
 # Bound to PCR7 (Secure Boot state), so kernel updates don't invalidate it but
