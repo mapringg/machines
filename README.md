@@ -110,9 +110,9 @@ the 80 °C → 100% point is the safety net and shouldn't move.
 - **The Firefox snap** — kept as long as possible, but a confined snap can't execute
   `/opt/1Password/1Password-BrowserSupport`, so the browser extension can never reach
   the desktop app. `ubuntu.sh` uses Mozilla's deb and pins it.
-- **Ghostty** — a third terminal to install and configure on two machines, to
-  replace one that is already there and works. It was originally chosen because it
-  bundles a Nerd Font, so `eza`'s icons render over ssh; the stock terminals don't,
-  and that is the one thing that will look wrong.
+- **Ghostty** — a terminal to install and configure on two machines, replacing one
+  that already ships and works. It was originally chosen for the Nerd Font it
+  bundles, which mattered only for `eza`'s icons over ssh — and `eza` left with
+  Omarchy. Ptyxis and Terminal.app are fine.
 - **Autologin** — not needed. Remote work is terminal-only, and SSH works fine with the
   machine sitting at a login screen. An un-logged-in desktop costs no RAM.
