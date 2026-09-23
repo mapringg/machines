@@ -12,8 +12,10 @@
 #                   has the Secret Key — have it before erasing)
 #                3. Safari -> tailscale.com, install, sign in
 #                4. scp ubuntu:Work/mapringg/machines/macbook.sh ~/ && ~/macbook.sh
-#              Tailscale SSH means step 4 needs no key. brew then adopts the two
-#              apps installed by hand rather than colliding with them.
+#              Tailscale SSH means step 4 needs no key. brew then adopts
+#              Tailscale rather than colliding with it. 1Password stays out of
+#              brew: it updates itself, and macOS App Management blocks brew's
+#              chgrp on its bundle even under sudo, so --adopt fails.
 #   Finder     ⌘2 for list view, then ⌘J → Date Created and Show Library Folder
 #              on, relative dates and Calculate all sizes off → Use as Defaults.
 #              Per-folder views live in .DS_Store and override the default, so
@@ -37,13 +39,15 @@ xcode-select -p >/dev/null 2>&1 || xcode-select --install
 # brew earns its place only because without it this script cannot install a
 # single application, and four manual downloads is the friction it exists to
 # remove. Nothing else uses it — there is no development toolchain on this
-# machine. The 1Password Safari extension ships inside the 1Password app.
-if ! command -v brew >/dev/null 2>&1; then
+# machine.
+# Test the file, not PATH: the installer doesn't touch the running shell, so a
+# re-run from the same terminal would otherwise install Homebrew a second time.
+if [ ! -x /opt/homebrew/bin/brew ]; then
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 fi
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
-brew install --cask --adopt 1password tailscale visual-studio-code
+brew install --cask --adopt tailscale visual-studio-code
 
 # --- Claude Code --------------------------------------------------------------
 command -v claude >/dev/null 2>&1 || curl -fsSL https://claude.ai/install.sh | bash
