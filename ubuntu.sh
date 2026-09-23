@@ -95,6 +95,13 @@ gsettings set org.gnome.shell app-picker-layout "[]"
 
 sudo usermod -aG docker "$USER"   # takes effect at next login
 
+# --- Claude Code --------------------------------------------------------------
+# The official installer, same as macbook.sh — it self-updates, so mise would
+# only add a layer between it and its own updates. Ubuntu puts ~/.local/bin on
+# PATH from .profile, which a non-login shell (an ssh command) never reads.
+command -v claude >/dev/null 2>&1 || curl -fsSL https://claude.ai/install.sh | bash
+grep -q 'local/bin' ~/.bashrc || echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+
 # --- git and mise -------------------------------------------------------------
 git config --global user.name mapringg
 git config --global user.email work@mapringg.com
