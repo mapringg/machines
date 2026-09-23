@@ -4,7 +4,16 @@
 # Tailscale, so nothing here is a development environment. Safe to re-run.
 #
 # MANUAL STEPS — do these first, they can't be scripted:
-#   Setup      sign in to iCloud, then 1Password, then Tailscale
+#   Bootstrap  the repo is private and this machine has no key yet, so the
+#              script cannot be fetched with curl. Order that works from bare
+#              metal, needing nothing but a browser:
+#                1. Setup Assistant, sign in to iCloud
+#                2. Safari -> 1password.com, install, sign in (Emergency Kit
+#                   has the Secret Key — have it before erasing)
+#                3. Safari -> tailscale.com, install, sign in
+#                4. scp ubuntu:Work/mapringg/machines/macbook.sh ~/ && ~/macbook.sh
+#              Tailscale SSH means step 4 needs no key. brew then adopts the two
+#              apps installed by hand rather than colliding with them.
 #   Finder     ⌘2 for list view, then ⌘J → Date Created and Show Library Folder
 #              on, relative dates and Calculate all sizes off → Use as Defaults.
 #              Per-folder views live in .DS_Store and override the default, so
@@ -27,7 +36,7 @@ if ! command -v brew >/dev/null 2>&1; then
 fi
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
-brew install --cask 1password ghostty tailscale visual-studio-code
+brew install --cask --adopt 1password ghostty tailscale visual-studio-code
 
 # Ghostty replaces Terminal.app because it bundles a Nerd Font, so eza's icons
 # render over ssh. Terminal.app cannot draw Nerd Font v3 glyphs at all.
