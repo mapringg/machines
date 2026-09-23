@@ -81,6 +81,20 @@ CON=$(nmcli -t -f NAME,DEVICE con show | awk -F: -v d="$NIC" '$2==d{print $1; ex
 sudo nmcli con mod "$CON" 802-3-ethernet.wake-on-lan magic
 sudo nmcli con up "$CON" >/dev/null   # brief link bounce
 
+# --- suspend over SSH ---------------------------------------------------------
+# polkit only grants suspend to a session that is physically at the machine, so
+# `ssh ubuntu 'systemctl suspend'` — the whole point of the power design — is
+# denied. Narrow grant: this one action, this one user.
+sudo tee /etc/polkit-1/rules.d/50-suspend.rules >/dev/null <<RULES
+polkit.addRule(function(action, subject) {
+    if ((action.id == "org.freedesktop.login1.suspend" ||
+         action.id == "org.freedesktop.login1.suspend-multiple-sessions") &&
+        subject.user == "$USER") {
+        return polkit.Result.YES;
+    }
+});
+RULES
+
 # --- LUKS auto-unlock via TPM -------------------------------------------------
 # Bound to PCR7 (Secure Boot state), so kernel updates don't invalidate it but
 # disabling Secure Boot does. The install passphrase stays as a keyslot, so a

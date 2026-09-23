@@ -30,10 +30,24 @@ Away from home I SSH in from the MacBook over Tailscale.
 
     ssh ubuntu 'systemctl suspend'
 
-and umbrel wakes it with a magic packet. Suspend keeps the LUKS volume unlocked in RAM,
-so waking never stops at a passphrase prompt — which a cold boot would, unreachably.
-Asleep it draws a few watts instead of ~100W; the PC is in my bedroom and the LED is
-annoying at night.
+and umbrel wakes it with a magic packet. umbrel is an appliance with no script of
+its own, and installing `wakeonlan` there wouldn't survive an OS update, so the
+packet is sent with the python3 it already has:
+
+    ssh umbrel 'python3 -c "
+    import socket
+    pkt = b\"\\xff\"*6 + bytes.fromhex(\"047c16483772\")*16
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    s.sendto(pkt, (\"192.168.1.255\", 9))"'
+
+`047c16483772` is enp12s0's MAC. It has to be sent from the LAN — a magic packet
+won't cross Tailscale, which is the whole reason this job belongs to umbrel.
+
+Suspend keeps the LUKS volume unlocked in RAM, so waking never stops at a passphrase
+prompt — which a cold boot would, unreachably. Measured: SSH answers about 15 seconds
+after the packet. Asleep it draws a few watts instead of ~100W; the PC is in my
+bedroom and the LED is annoying at night.
 
 **Access.** Tailscale SSH, so there are no host keys to manage. tmux so a dropped
 connection never loses work.
