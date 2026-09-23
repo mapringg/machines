@@ -97,17 +97,23 @@ sudo usermod -aG docker "$USER"   # takes effect at next login
 
 # --- Claude Code --------------------------------------------------------------
 # The official installer, same as macbook.sh — it self-updates, so mise would
-# only add a layer between it and its own updates. Ubuntu puts ~/.local/bin on
-# PATH from .profile, which a non-login shell (an ssh command) never reads.
+# only add a layer between it and its own updates. It lands in ~/.local/bin,
+# which Ubuntu's stock .profile already puts on PATH.
 command -v claude >/dev/null 2>&1 || curl -fsSL https://claude.ai/install.sh | bash
-grep -q 'local/bin' ~/.bashrc || echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 
 # --- git and mise -------------------------------------------------------------
 git config --global user.name mapringg
 git config --global user.email work@mapringg.com
 
-# mise is inert until it's hooked into the shell.
-grep -q 'mise activate' ~/.bashrc || echo 'eval "$(mise activate bash)"' >> ~/.bashrc
+# mise is inert until it's hooked into the shell. One delimited block, appended
+# once, so re-runs don't stack lines onto the end of Ubuntu's stock .bashrc.
+if ! grep -q '^# --- machines ---' ~/.bashrc; then
+  cat >> ~/.bashrc <<'BASHRC'
+
+# --- machines ----------------------------------------------------------------
+eval "$(mise activate bash)"
+BASHRC
+fi
 
 # --- Wake-on-LAN --------------------------------------------------------------
 # NetworkManager owns this NIC and re-applies its ethernet settings a couple of
