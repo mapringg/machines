@@ -62,7 +62,7 @@ export LANG=en_US.UTF-8
 export LC_CTYPE=en_US.UTF-8
 ZSHRC
 
-git config --global user.name mapringg
+git config --global user.name "Sorawit Kongnurat"
 git config --global user.email work@mapringg.com
 
 # Tailscale SSH means no host keys to manage, so this is only about not leaving

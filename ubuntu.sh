@@ -254,7 +254,7 @@ gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:$KB
 gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:$KB binding '<Super>o'
 
 # --- git and mise -------------------------------------------------------------
-git config --global user.name mapringg
+git config --global user.name "Sorawit Kongnurat"
 git config --global user.email work@mapringg.com
 
 # mise is inert until it's hooked into the shell. One delimited block, appended
