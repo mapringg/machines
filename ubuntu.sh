@@ -14,7 +14,11 @@
 #              from Files and `sudo chown $USER /run/media/$USER/Backup`.
 #   After      sign in to 1Password, then Tailscale; restore ~/.ssh, ~/Work and
 #              the .env files; run `claude` once to sign in (T3 Code drives it);
-#              run the first backup from Déjà Dup.
+#              run the first backup from Déjà Dup; reboot (docker and input
+#              groups), then open Handy, pick Parakeet V3, turn on launch at
+#              login, and set Advanced → Paste Method to Clipboard
+#              (Ctrl+Shift+V) — ydotool's typing is slow, and terminals only
+#              paste with the Shift variant.
 #
 # Close Firefox before running: removing the snap fails while it is open.
 set -euo pipefail
@@ -112,7 +116,7 @@ gsettings set org.gnome.desktop.peripherals.mouse accel-profile 'flat'
 # is what sticks — it lands in org.gnome.shell disabled-extensions.
 gnome-extensions disable ding@rastersoft.com
 
-sudo usermod -aG docker "$USER"   # takes effect at next login
+sudo usermod -aG docker "$USER"   # takes effect at next boot, see Handy below
 
 # --- Claude Code --------------------------------------------------------------
 # The official installer, same as macbook.sh — it self-updates, so mise would
@@ -130,6 +134,41 @@ command -v claude >/dev/null 2>&1 || curl -fsSL https://claude.ai/install.sh | b
 [ -x ~/.local/bin/t3 ] || curl -fsSL https://t3.codes/install.sh | sh
 sudo loginctl enable-linger "$USER"
 systemctl --user is-enabled t3code.service >/dev/null 2>&1 || ~/.local/bin/t3 service install
+
+# --- Handy (dictation) --------------------------------------------------------
+# No apt repo, only a .deb on GitHub releases; it updates itself from then on,
+# so this only runs once. The latest tag is read from the redirect rather than
+# the API, which rate-limits.
+if ! dpkg -s handy >/dev/null 2>&1; then
+  tag=$(curl -fsSLo /dev/null -w '%{url_effective}' https://github.com/cjpais/Handy/releases/latest)
+  ver=${tag##*/v}
+  curl -fsSLo /tmp/handy.deb "https://github.com/cjpais/Handy/releases/download/v$ver/Handy_${ver}_amd64.deb"
+  sudo apt install -y /tmp/handy.deb
+  rm /tmp/handy.deb
+fi
+
+# Handy types into the focused window through ydotool: wtype doesn't work on
+# GNOME's compositor. ydotoold needs /dev/uinput, which Ubuntu's udev rule
+# gives to the input group — so the service only starts after a reboot. Not a
+# re-login: lingering (T3 Code, above) keeps the user manager alive across
+# logout, and with it the group list every session process inherits.
+sudo apt install -y ydotool
+sudo usermod -aG input "$USER"
+systemctl --user enable ydotool.service
+
+# Wayland won't let Handy grab a global hotkey itself, so GNOME owns it.
+# Super+O is GNOME's rotation-lock key by default, meaningless on a desktop.
+gsettings set org.gnome.settings-daemon.plugins.media-keys rotate-video-lock-static "['XF86RotationLockToggle']"
+KB=/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/handy/
+list=$(gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings)
+case "$list" in
+  *"$KB"*) ;;
+  "@as []") gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "['$KB']" ;;
+  *)        gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "${list%]}, '$KB']" ;;
+esac
+gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:$KB name 'Handy'
+gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:$KB command 'handy --toggle-transcription'
+gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:$KB binding '<Super>o'
 
 # --- git and mise -------------------------------------------------------------
 git config --global user.name mapringg
