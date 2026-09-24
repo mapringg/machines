@@ -110,6 +110,9 @@ the 80 °C → 100% point is the safety net and shouldn't move.
 - **The Firefox snap** — kept as long as possible, but a confined snap can't execute
   `/opt/1Password/1Password-BrowserSupport`, so the browser extension can never reach
   the desktop app. `ubuntu.sh` uses Mozilla's deb and pins it.
+- **The Chromium snap** — the social-intelligence verify skill keeps its browser
+  profile under `~/.cache`, and a confined snap can't write to hidden directories
+  in `$HOME`. `ubuntu.sh` installs Google's Chrome deb instead.
 - **Ghostty** — a terminal to install and configure on two machines, replacing one
   that already ships and works. It was originally chosen for the Nerd Font it
   bundles, which mattered only for `eza`'s icons over ssh — and `eza` left with

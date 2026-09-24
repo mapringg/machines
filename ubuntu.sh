@@ -96,6 +96,16 @@ sudo apt install -y git tmux lazygit deja-dup docker.io tpm2-tools \
 # package as older. The pin already decided which one we want.
 sudo apt install -y --allow-downgrades firefox
 
+# Google Chrome, for social-intelligence's verify skill, which drives it over
+# CDP. Not the Chromium snap: the skill keeps its browser profile under
+# ~/.cache, and a confined snap can't write to hidden directories in $HOME.
+# The .deb adds Google's apt repo itself, so apt keeps it updated from then on.
+if ! dpkg -s google-chrome-stable >/dev/null 2>&1; then
+  curl -fsSLo /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+  sudo apt install -y /tmp/chrome.deb
+  rm /tmp/chrome.deb
+fi
+
 # The dock's favourites still name the snap's app id, which no longer exists,
 # leaving a dead icon where Firefox used to be. Same slot, real package.
 gsettings set org.gnome.shell favorite-apps \
