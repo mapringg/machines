@@ -147,6 +147,29 @@ if ! dpkg -s handy >/dev/null 2>&1; then
   rm /tmp/handy.deb
 fi
 
+# Handy's tray glyphs fill three quarters of their canvas, 1Password's 89%
+# (227 of 256px), so Handy sits visibly smaller in the top bar. Scale each one
+# up to match, centred. The originals are diverted rather than overwritten, so
+# Handy's updates land in the .orig files instead of undoing this, and a
+# re-run rebuilds from them. Handy picks the new icons up at its next start.
+sudo apt install -y python3-pil
+for f in handy handy_warning recording transcribing; do
+  png=/usr/lib/Handy/resources/$f.png
+  [ -n "$(dpkg-divert --list "$png")" ] || sudo dpkg-divert --rename --divert "$png.orig" --add "$png"
+  sudo python3 - "$png.orig" "$png" <<'PY'
+import sys
+from PIL import Image
+src, dst = sys.argv[1:]
+im = Image.open(src).convert("RGBA")
+glyph = im.crop(im.getchannel("A").getbbox())
+k = im.width * 227 / 256 / max(glyph.size)
+glyph = glyph.resize((round(glyph.width * k), round(glyph.height * k)), Image.LANCZOS)
+out = Image.new("RGBA", im.size)
+out.paste(glyph, ((im.width - glyph.width) // 2, (im.height - glyph.height) // 2))
+out.save(dst)
+PY
+done
+
 # The .deb puts its 256px icon in hicolor/256x256@2, a folder meant for 512px
 # icons, so at this display's scale (1.25, which the Shell rounds up to 2) the
 # app grid loads it at half size and stretches it. Pointing the launcher
