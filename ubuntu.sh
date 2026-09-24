@@ -58,6 +58,10 @@ command -v tailscale >/dev/null || curl -fsSL https://tailscale.com/install.sh |
 # Prints a URL to authenticate in the browser, so 1Password has to be signed in.
 tailscale status >/dev/null 2>&1 || sudo tailscale up --ssh
 
+# Serve config is root-only by default, and `t3 pair --tailscale` publishes
+# T3 Code with `tailscale serve` as me, so it's denied without this.
+sudo tailscale set --operator="$USER"
+
 # Firefox from Mozilla, not the Ubuntu snap. A confined snap can't execute
 # /opt/1Password/1Password-BrowserSupport, so the extension can never reach the
 # desktop app and every unlock has to be done twice. Pinned so the `firefox`
