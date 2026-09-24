@@ -141,6 +141,22 @@ command -v claude >/dev/null 2>&1 || curl -fsSL https://claude.ai/install.sh | b
 sudo loginctl enable-linger "$USER"
 systemctl --user is-enabled t3code.service >/dev/null 2>&1 || ~/.local/bin/t3 service install
 
+# Lingering starts the service at boot, before GNOME exports the session's
+# display variables, and T3's "open in editor" hands its own environment to
+# `code` — which then dies with "Missing X server or $DISPLAY", even when a
+# window is already open, since Electron sets up the display before handing off
+# to it. Fixed values are safe: GNOME's socket is always wayland-0, and Wayland
+# needs no auth file. DISPLAY wouldn't do — Xwayland's XAUTHORITY is renamed at
+# each login. A drop-in, so `t3 service install` can't overwrite it.
+dropin=~/.config/systemd/user/t3code.service.d/display.conf
+want=$'[Service]\nEnvironment=WAYLAND_DISPLAY=wayland-0 XDG_SESSION_TYPE=wayland'
+if [ "$(cat "$dropin" 2>/dev/null)" != "$want" ]; then
+  mkdir -p "${dropin%/*}"
+  printf '%s\n' "$want" >"$dropin"
+  systemctl --user daemon-reload
+  systemctl --user restart t3code.service
+fi
+
 # --- Handy (dictation) --------------------------------------------------------
 # No apt repo, only a .deb on GitHub releases; it updates itself from then on,
 # so this only runs once. The latest tag is read from the redirect rather than
