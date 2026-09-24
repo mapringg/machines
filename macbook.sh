@@ -22,6 +22,8 @@
 #              `find ~ -name .DS_Store -type f -delete` if an old one wins.
 #              FXPreferredViewStyle and AlwaysOpenWindowsInListView are no-ops
 #              on macOS 27 — they look like they should work and don't.
+#   Handy      open it, grant Microphone and Accessibility (it pastes into the
+#              focused app), pick Parakeet V3, turn on launch at login.
 #   Log out    key repeat only applies to a new login session.
 set -euo pipefail
 
@@ -47,7 +49,8 @@ if [ ! -x /opt/homebrew/bin/brew ]; then
 fi
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
-brew install --cask --adopt tailscale visual-studio-code
+# Handy is dictation; it updates itself, and brew only saves the download.
+brew install --cask --adopt tailscale visual-studio-code handy
 
 # --- Claude Code --------------------------------------------------------------
 command -v claude >/dev/null 2>&1 || curl -fsSL https://claude.ai/install.sh | bash
