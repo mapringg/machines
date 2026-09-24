@@ -190,4 +190,9 @@ if ! grep -q tpm2-device /etc/crypttab; then
 fi
 # Unconditional: dracut's systemd-cryptsetup module pulls in tpm2-tss, which
 # needs the tpm2-tools binaries present at build time.
-sudo dracut --force --regenerate-all
+# One per kernel in /boot, not --regenerate-all: that walks /usr/lib/modules,
+# where a removed kernel leaves a stub directory behind until it's purged, and
+# dracut fails on it.
+for k in /boot/vmlinuz-*; do
+  sudo dracut --force --kver "${k#/boot/vmlinuz-}"
+done
