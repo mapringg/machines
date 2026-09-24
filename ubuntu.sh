@@ -13,7 +13,8 @@
 #   Drive      format the external drive ext4, label `Backup`, then mount it
 #              from Files and `sudo chown $USER /run/media/$USER/Backup`.
 #   After      sign in to 1Password, then Tailscale; restore ~/.ssh, ~/Work and
-#              the .env files; run the first backup from Déjà Dup.
+#              the .env files; run `claude` once to sign in (T3 Code drives it);
+#              run the first backup from Déjà Dup.
 #
 # Close Firefox before running: removing the snap fails while it is open.
 set -euo pipefail
@@ -76,7 +77,7 @@ if snap list firefox >/dev/null 2>&1; then sudo snap remove --purge firefox; fi
 # time it's used, and "ready to work" doesn't mean "37 updates pending".
 sudo apt update
 sudo apt upgrade -y
-sudo apt install -y git tmux deja-dup docker.io tpm2-tools \
+sudo apt install -y git tmux lazygit deja-dup docker.io tpm2-tools \
                     1password mise code
 
 # --allow-downgrades because Ubuntu's `firefox` stub carries an epoch
@@ -111,6 +112,17 @@ sudo usermod -aG docker "$USER"   # takes effect at next login
 # only add a layer between it and its own updates. It lands in ~/.local/bin,
 # which Ubuntu's stock .profile already puts on PATH.
 command -v claude >/dev/null 2>&1 || curl -fsSL https://claude.ai/install.sh | bash
+
+# --- T3 Code ------------------------------------------------------------------
+# Runs as a systemd user service so the phone and web apps can reach the agents
+# here without a terminal left open. The installer also lands in ~/.local/bin,
+# which isn't on PATH yet during a first run, hence the full path. Lingering is
+# what keeps the service up at boot and after logout; the service setup would
+# only print this command if it lacked the rights, so do it here with sudo.
+# Updates are `t3 update`, not a re-run of this script.
+[ -x ~/.local/bin/t3 ] || curl -fsSL https://t3.codes/install.sh | sh
+sudo loginctl enable-linger "$USER"
+systemctl --user is-enabled t3code.service >/dev/null 2>&1 || ~/.local/bin/t3 service install
 
 # --- git and mise -------------------------------------------------------------
 git config --global user.name mapringg
