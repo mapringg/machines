@@ -55,6 +55,16 @@ if [ ! -f /etc/apt/sources.list.d/vscode.list ]; then
     | sudo tee /etc/apt/sources.list.d/vscode.list >/dev/null
 fi
 
+# GitHub CLI. The archive has a `gh` too, but it lags behind and GitHub asks
+# people not to use it. The key is already binary, so no dearmor.
+if [ ! -f /etc/apt/sources.list.d/github-cli.list ]; then
+  sudo install -dm755 /etc/apt/keyrings
+  curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+    | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg >/dev/null
+  echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+    | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null
+fi
+
 command -v tailscale >/dev/null || curl -fsSL https://tailscale.com/install.sh | sh
 
 # --ssh is what removes host-key management entirely; without it this machine is
@@ -89,7 +99,7 @@ if snap list firefox >/dev/null 2>&1; then sudo snap remove --purge firefox; fi
 sudo apt update
 sudo apt upgrade -y
 sudo apt install -y git tmux lazygit deja-dup docker.io tpm2-tools \
-                    1password mise code python3-pil
+                    1password mise code gh python3-pil
 
 # --allow-downgrades because Ubuntu's `firefox` stub carries an epoch
 # (1:1snap1-...) and Mozilla's real version does not, so apt scores the genuine
