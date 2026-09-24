@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ubuntu.sh — desktop, 931GB NVMe (nvme1n1), user mapring, hostname `ubuntu`
+# ubuntu.sh — desktop, 931GB NVMe, user mapring, hostname `ubuntu`
 # Ubuntu 26.04.1 LTS Desktop, stock GNOME. Safe to re-run.
 #
 # MANUAL STEPS — do these first, they can't be scripted:
@@ -20,7 +20,10 @@
 set -euo pipefail
 
 NIC=enp12s0
-LUKS=/dev/nvme1n1p3   # nvme1n1 is the 931GB Ubuntu drive; nvme0n1 is Windows
+# The installer's crypttab names the LUKS partition by UUID. Not /dev/nvmeXn1pY:
+# the kernel doesn't keep the two NVMe drives in the same order across boots,
+# and on the wrong boot that path is the Windows drive.
+LUKS=/dev/disk/by-uuid/$(awk '$2 ~ /^UUID=/ {sub(/^UUID=/, "", $2); print $2; exit}' /etc/crypttab)
 
 # --- third-party repositories -------------------------------------------------
 # Everything else comes from the Ubuntu archive. These don't ship there.
