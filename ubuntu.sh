@@ -147,6 +147,15 @@ if ! dpkg -s handy >/dev/null 2>&1; then
   rm /tmp/handy.deb
 fi
 
+# The .deb puts its 256px icon in hicolor/256x256@2, a folder meant for 512px
+# icons, so at this display's scale (1.25, which the Shell rounds up to 2) the
+# app grid loads it at half size and stretches it. Pointing the launcher
+# straight at the file skips that lookup. Rebuilt on each run so Handy's own
+# changes to its launcher carry over.
+mkdir -p ~/.local/share/applications
+sed 's|^Icon=.*|Icon=/usr/share/icons/hicolor/256x256@2/apps/handy.png|' \
+  /usr/share/applications/Handy.desktop > ~/.local/share/applications/Handy.desktop
+
 # Handy types into the focused window through ydotool: wtype doesn't work on
 # GNOME's compositor. ydotoold needs /dev/uinput, which Ubuntu's udev rule
 # gives to the input group — so the service only starts after a reboot. Not a
