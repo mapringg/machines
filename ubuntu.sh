@@ -89,7 +89,7 @@ if snap list firefox >/dev/null 2>&1; then sudo snap remove --purge firefox; fi
 sudo apt update
 sudo apt upgrade -y
 sudo apt install -y git tmux lazygit deja-dup docker.io tpm2-tools \
-                    1password mise code
+                    1password mise code python3-pil
 
 # --allow-downgrades because Ubuntu's `firefox` stub carries an epoch
 # (1:1snap1-...) and Mozilla's real version does not, so apt scores the genuine
@@ -105,6 +105,26 @@ if ! dpkg -s google-chrome-stable >/dev/null 2>&1; then
   sudo apt install -y /tmp/chrome.deb
   rm /tmp/chrome.deb
 fi
+
+# Chrome's circle fills its whole canvas; Firefox's globe fills 112 of 128px,
+# so Chrome sits visibly larger in the dock. Scale each size down to match,
+# centred, into the user icon theme, which is looked up before /usr/share —
+# Chrome's updates rewrite the system copies and leave these alone. Rebuilt
+# from Chrome's own logos on each run, so a new logo carries over.
+for src in /opt/google/chrome/product_logo_*.png; do
+  n=${src##*_}; n=${n%.png}
+  mkdir -p ~/.local/share/icons/hicolor/${n}x${n}/apps
+  python3 - "$src" ~/.local/share/icons/hicolor/${n}x${n}/apps/google-chrome.png <<'PY'
+import sys
+from PIL import Image
+src, dst = sys.argv[1:]
+im = Image.open(src).convert("RGBA")
+side = round(im.width * 112 / 128)
+out = Image.new("RGBA", im.size)
+out.paste(im.resize((side, side), Image.LANCZOS), ((im.width - side) // 2,) * 2)
+out.save(dst)
+PY
+done
 
 # The dock's favourites still name the snap's app id, which no longer exists,
 # leaving a dead icon where Firefox used to be. Same slot, real package.
@@ -184,7 +204,6 @@ fi
 # up to match, centred. The originals are diverted rather than overwritten, so
 # Handy's updates land in the .orig files instead of undoing this, and a
 # re-run rebuilds from them. Handy picks the new icons up at its next start.
-sudo apt install -y python3-pil
 for f in handy handy_warning recording transcribing; do
   png=/usr/lib/Handy/resources/$f.png
   [ -n "$(dpkg-divert --list "$png")" ] || sudo dpkg-divert --rename --divert "$png.orig" --add "$png"
