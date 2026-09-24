@@ -116,6 +116,12 @@ gsettings set org.gnome.desktop.peripherals.mouse accel-profile 'flat'
 # is what sticks — it lands in org.gnome.shell disabled-extensions.
 gnome-extensions disable ding@rastersoft.com
 
+# Tiling Assistant. Ubuntu's take on window snapping: it pops a picker to fill
+# the other half after each snap and takes over Super+arrows. Stock GNOME
+# already does half and full-screen snapping without it. Same session-mode
+# story as Desktop Icons, so disable rather than uninstall.
+gnome-extensions disable tiling-assistant@ubuntu.com
+
 sudo usermod -aG docker "$USER"   # takes effect at next boot, see Handy below
 
 # --- Claude Code --------------------------------------------------------------
