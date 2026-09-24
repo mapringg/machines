@@ -44,10 +44,19 @@ packet is sent with the python3 it already has:
 `047c16483772` is enp12s0's MAC. It has to be sent from the LAN — a magic packet
 won't cross Tailscale, which is the whole reason this job belongs to umbrel.
 
-Suspend keeps the LUKS volume unlocked in RAM, so waking never stops at a passphrase
-prompt — which a cold boot would, unreachably. Measured: SSH answers about 15 seconds
-after the packet. Asleep it draws a few watts instead of ~100W; the PC is in my
-bedroom and the LED is annoying at night.
+From the phone, both are Termius snippets — *Sleep PC* targeting `ubuntu`, *Wake PC*
+targeting `umbrel`. The snippet already runs on umbrel, so it drops the outer quoting:
+
+    systemctl suspend
+
+    python3 -c 'import socket;s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM);s.setsockopt(socket.SOL_SOCKET,socket.SO_BROADCAST,1);s.sendto(b"\xff"*6+bytes.fromhex("047c16483772")*16,("192.168.1.255",9))'
+
+Measured: SSH answers about 15 seconds after the packet. Asleep it draws a few watts
+instead of ~100W; the PC is in my bedroom and the LED is annoying at night.
+
+Sleep/wake is the whole routine; it never needs shutting down. A cold boot doesn't
+stop at a passphrase prompt either — `ubuntu.sh` enrolls the TPM — so `sudo reboot`
+over SSH comes back on its own, and after a power cut the BIOS powers it back on.
 
 **Access.** Tailscale SSH, so there are no host keys to manage. tmux so a dropped
 connection never loses work.
@@ -66,6 +75,9 @@ either script. After a CMOS reset, only these differ from defaults:
 - **ErP Ready → Disabled.** ErP cuts standby power to the NIC and Wake-on-LAN dies
   with it.
 - **Resume By PCI-E Device → Enabled.** This is the Wake-on-LAN toggle on MSI boards.
+- **Restore after AC Power Loss → Power On.** After a power cut the PC is fully off,
+  not suspended, and a magic packet may not wake it from there. Booting unattended is
+  safe because the TPM unlocks LUKS.
 - **Boot Option #1 → `ubuntu`.** The Windows install puts its own entry first, and
   this board re-asserts its own priority list over whatever `efibootmgr` sets from
   Linux — so the OS can't fix this, only the firmware can. Set it in *UEFI Hard Disk
@@ -73,6 +85,9 @@ either script. After a CMOS reset, only these differ from defaults:
 
 Already correct at default, but worth confirming: Re-Size BAR enabled, Secure Boot on,
 AMD fTPM on, CSM disabled.
+
+The TPM unlock is bound to PCR7 (Secure Boot state), so a BIOS update or toggling
+Secure Boot makes the next boot ask for the passphrase. Only do either at the desk.
 
 **Fan curves.** Both headers set to PWM with Smart Fan Mode on. A CMOS reset wipes
 these, and the machine is in my bedroom.
