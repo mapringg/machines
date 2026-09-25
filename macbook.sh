@@ -52,6 +52,10 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 # Handy is dictation; it updates itself, and brew only saves the download.
 brew install --cask --adopt tailscale visual-studio-code handy
 
+# T3 Code's "Open in VS Code" hands the Mac a vscode-remote link to ubuntu over
+# SSH, which needs Remote-SSH on this end.
+code --install-extension ms-vscode-remote.remote-ssh
+
 # --- Claude Code --------------------------------------------------------------
 command -v claude >/dev/null 2>&1 || curl -fsSL https://claude.ai/install.sh | bash
 
@@ -67,9 +71,11 @@ git config --global user.email work@mapringg.com
 
 # Tailscale SSH means no host keys to manage, so this is only about not leaving
 # a connection hanging when the link drops. tmux on the far end does the rest.
+# The MagicDNS name is what T3 Code's "Open in VS Code" links use; without it
+# here they'd log in as the Mac's user.
 mkdir -p ~/.ssh && chmod 700 ~/.ssh
 cat > ~/.ssh/config <<'SSHCONFIG'
-Host ubuntu
+Host ubuntu ubuntu.*.ts.net
     HostName ubuntu
     User mapring
     ServerAliveInterval 30

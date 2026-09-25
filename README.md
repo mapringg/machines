@@ -59,7 +59,8 @@ stop at a passphrase prompt either — `ubuntu.sh` enrolls the TPM — so `sudo 
 over SSH comes back on its own, and after a power cut the BIOS powers it back on.
 
 **Access.** Tailscale SSH, so there are no host keys to manage. tmux so a dropped
-connection never loses work.
+connection never loses work. ubuntu also runs a stock sshd bound to loopback only;
+it's never reached, but T3 Code won't offer "Open in VS Code" to the MacBook without it.
 
 **Backups.** Déjà Dup to an external USB drive, daily, 30 days kept, encrypted.
 It is *not* in the installer's Default selection, so `ubuntu.sh` installs and

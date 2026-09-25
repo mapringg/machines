@@ -80,6 +80,27 @@ tailscale status >/dev/null 2>&1 || sudo tailscale up --ssh
 # T3 Code with `tailscale serve` as me, so it's denied without this.
 sudo tailscale set --operator="$USER"
 
+# A real sshd, but loopback only. T3 Code enables "Open in VS Code" from the
+# MacBook only if something listens on 127.0.0.1:22 or ::1:22, and Tailscale
+# SSH doesn't — it intercepts port 22 on the tailnet address alone. The link it
+# builds points at the MagicDNS name, which Tailscale SSH still answers, so
+# this sshd is never actually reached from outside. Written before the install
+# so it never listens anywhere else, even for a moment. Ubuntu starts sshd from
+# ssh.socket, whose addresses a generator derives from ListenAddress on
+# daemon-reload.
+sshd_conf=/etc/ssh/sshd_config.d/10-loopback.conf
+sshd_want=$'ListenAddress 127.0.0.1\nListenAddress ::1\nPasswordAuthentication no\nKbdInteractiveAuthentication no'
+if [ "$(cat "$sshd_conf" 2>/dev/null)" != "$sshd_want" ]; then
+  sudo install -dm755 "${sshd_conf%/*}"
+  printf '%s\n' "$sshd_want" | sudo tee "$sshd_conf" >/dev/null
+  sshd_changed=1
+fi
+dpkg -s openssh-server >/dev/null 2>&1 || { sudo apt install -y openssh-server; sshd_changed=1; }
+if [ -n "${sshd_changed:-}" ]; then
+  sudo systemctl daemon-reload
+  sudo systemctl restart ssh.socket
+fi
+
 # Firefox from Mozilla, not the Ubuntu snap. A confined snap can't execute
 # /opt/1Password/1Password-BrowserSupport, so the extension can never reach the
 # desktop app and every unlock has to be done twice. Pinned so the `firefox`
