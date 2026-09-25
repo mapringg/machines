@@ -10,8 +10,8 @@
 #              "Encrypt with passphrase"; hostname `ubuntu`, user `mapring`.
 #              Delete all partitions on BOTH disks during the Windows install
 #              first, so Windows can't put its boot files on this drive.
-#   Drive      format the external drive ext4, label `Backup`, then mount it
-#              from Files and `sudo chown $USER /run/media/$USER/Backup`.
+#   Drive      format the external drive ext4, label `Backup`, and leave it
+#              plugged in — the script refuses to run without it.
 #   After      sign in to 1Password, then Tailscale; restore ~/.ssh, ~/Work and
 #              the .env files; run `claude` once to sign in (T3 Code drives it);
 #              run the first backup from Déjà Dup; reboot (docker and input
@@ -28,6 +28,10 @@ NIC=enp12s0
 # the kernel doesn't keep the two NVMe drives in the same order across boots,
 # and on the wrong boot that path is the Windows drive.
 LUKS=/dev/disk/by-uuid/$(awk '$2 ~ /^UUID=/ {sub(/^UUID=/, "", $2); print $2; exit}' /etc/crypttab)
+# Déjà Dup is pointed at the backup drive by UUID, so it has to be plugged in.
+# Checked up front rather than failing halfway through.
+BACKUP=/dev/disk/by-label/Backup
+[[ -e $BACKUP ]] || { echo "Plug in the Backup drive first." >&2; exit 1; }
 
 # --- third-party repositories -------------------------------------------------
 # Everything else comes from the Ubuntu archive. These don't ship there.
@@ -303,11 +307,22 @@ RULES
 
 # --- backups ------------------------------------------------------------------
 # Déjà Dup to the external drive: everything in $HOME, daily, 30 days kept.
-# The drive is ext4 labelled `Backup` and has to be formatted and mounted by
-# hand first — a fresh ext4 is root-owned, so it also needs a chown before Déjà
-# Dup can write to it. 26.04 mounts removable media under /run/media, not /media.
-gsettings set org.gnome.DejaDup backend 'local'
-gsettings set org.gnome.DejaDup.Local folder "/run/media/$USER/Backup/ubuntu"
+# The drive is ext4 labelled `Backup`, formatted by hand. The `drive` backend
+# finds it by UUID and mounts it before each run. The `local` backend took a
+# fixed /run/media path, and GNOME only automounts drives plugged in after login,
+# so after every reboot the path was missing and the scheduled backup failed.
+# A fresh ext4 root is root-owned, so mount it once here and chown it.
+mnt=$(findmnt -no TARGET "$BACKUP" | head -1 || true)
+if [[ -z $mnt ]]; then
+  udisksctl mount -b "$BACKUP" >/dev/null
+  mnt=$(findmnt -no TARGET "$BACKUP" | head -1)
+fi
+sudo chown "$USER:$USER" "$mnt"
+gsettings set org.gnome.DejaDup backend 'drive'
+gsettings set org.gnome.DejaDup.Drive uuid "$(lsblk -no UUID "$BACKUP")"
+gsettings set org.gnome.DejaDup.Drive name 'Backup'
+gsettings set org.gnome.DejaDup.Drive folder 'ubuntu'
+gsettings reset org.gnome.DejaDup.Local folder
 gsettings set org.gnome.DejaDup include-list "['\$HOME']"
 gsettings set org.gnome.DejaDup exclude-list "['\$TRASH', '\$DOWNLOAD', '\$HOME/Backup', '\$HOME/.cache', '\$HOME/snap']"
 gsettings set org.gnome.DejaDup periodic true
