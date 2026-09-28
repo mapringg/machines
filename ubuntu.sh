@@ -172,9 +172,12 @@ gsettings set org.gnome.shell app-picker-layout "[]"
 
 # Flat pointer, no acceleration. GNOME's default is libinput's adaptive curve,
 # which is neither Windows' curve nor off, so small moves land slightly wrong
-# for a hand trained on the Windows side of this same desk. Pointer speed is
-# left at default; set it in Settings → Mouse if it feels off.
+# for a hand trained on the Windows side of this same desk. Speed too: Windows
+# moves the cursor in physical pixels at any scale, GNOME in logical ones, so at
+# 150% the same mouse ran 1.5× faster here. With a flat profile the speed is a
+# plain multiplier of 1 + speed, and 1 − 0.33 undoes the 1.5.
 gsettings set org.gnome.desktop.peripherals.mouse accel-profile 'flat'
+gsettings set org.gnome.desktop.peripherals.mouse speed -0.33
 
 # Desktop Icons. Nothing lives on the desktop, and it hitches clicks and drags
 # on the background. Ubuntu enables it from the session mode, so disabling it
