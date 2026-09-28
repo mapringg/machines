@@ -187,6 +187,20 @@ gnome-extensions disable ding@rastersoft.com
 # story as Desktop Icons, so disable rather than uninstall.
 gnome-extensions disable tiling-assistant@ubuntu.com
 
+# HDR, 240Hz, 150%. GNOME has done HDR since 48 (Settings → Displays), but it
+# lives in ~/.config/monitors.xml, not gsettings, so gdctl writes it the same way
+# Settings does. `gdctl set` replaces the whole layout, hence mode and scale too
+# — the monitor's EDID prefers a 60Hz mode. The connector is read rather than
+# fixed: the monitor has been HDMI-1 and HDMI-2. Skipped once HDR is on, since
+# applying a layout blanks the screen for a moment.
+conn=$(gdctl show | awk '/Monitor .*Microstep/ {print $2; exit}')
+if ! awk -v c="$conn" '/<connector>/ {hit = index($0, ">" c "<")}
+                      hit && /<colormode>bt2100</ {found = 1}
+                      END {exit !found}' ~/.config/monitors.xml 2>/dev/null; then
+  gdctl set --persistent --logical-monitor --primary --scale 1.5 \
+    --monitor "$conn" --mode 3840x2160@239.990 --color-mode bt2100
+fi
+
 sudo usermod -aG docker "$USER"   # takes effect at next boot, see Handy below
 
 # --- Claude Code --------------------------------------------------------------
@@ -257,7 +271,7 @@ PY
 done
 
 # The .deb puts its 256px icon in hicolor/256x256@2, a folder meant for 512px
-# icons, so at this display's scale (1.25, which the Shell rounds up to 2) the
+# icons, so at this display's scale (1.5, which the Shell rounds up to 2) the
 # app grid loads it at half size and stretches it. Pointing the launcher
 # straight at the file skips that lookup. Rebuilt on each run so Handy's own
 # changes to its launcher carry over.
