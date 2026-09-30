@@ -190,19 +190,37 @@ gnome-extensions disable ding@rastersoft.com
 # story as Desktop Icons, so disable rather than uninstall.
 gnome-extensions disable tiling-assistant@ubuntu.com
 
-# HDR, 240Hz, 150%. GNOME has done HDR since 48 (Settings → Displays), but it
-# lives in ~/.config/monitors.xml, not gsettings, so gdctl writes it the same way
-# Settings does. `gdctl set` replaces the whole layout, hence mode and scale too
-# — the monitor's EDID prefers a 60Hz mode. The connector is read rather than
-# fixed: the monitor has been HDMI-1 and HDMI-2. Skipped once HDR is on, since
-# applying a layout blanks the screen for a moment.
+# SDR, 240Hz, 150%, full-range RGB. SDR because HDR greys out the monitor's own
+# Brightness and sRGB mode, and those are what make SDR text look right on this
+# wide-gamut QD-OLED; Windows still gets HDR for games, since the monitor
+# follows whatever signal it's sent. Full range because over HDMI "auto" can
+# pick limited for a 4K TV timing, which lifts OLED black to grey. None of this
+# is in gsettings — it lives in ~/.config/monitors.xml, so gdctl writes it the
+# same way Settings does. `gdctl set` replaces the whole layout, hence mode and
+# scale too — the monitor's EDID prefers a 60Hz mode. The connector is read
+# rather than fixed: the monitor has been HDMI-1 and HDMI-2. Skipped once
+# applied, since applying a layout blanks the screen for a moment.
 conn=$(gdctl show | awk '/Monitor .*Microstep/ {print $2; exit}')
-if ! awk -v c="$conn" '/<connector>/ {hit = index($0, ">" c "<")}
-                      hit && /<colormode>bt2100</ {found = 1}
-                      END {exit !found}' ~/.config/monitors.xml 2>/dev/null; then
+state=$(gdctl show --verbose)
+if ! { gdctl show | grep -A1 'Current mode' | grep -q '3840x2160@239.990' &&
+       grep -q 'color-mode ⇒  default' <<<"$state" &&
+       grep -q 'rgb-range ⇒  full' <<<"$state"; }; then
   gdctl set --persistent --logical-monitor --primary --scale 1.5 \
-    --monitor "$conn" --mode 3840x2160@239.990 --color-mode bt2100
+    --monitor "$conn" --mode 3840x2160@239.990 --color-mode default --rgb-range full
 fi
+
+# Grayscale text smoothing. Subpixel smoothing assumes RGB stripes; QD-OLED
+# subpixels sit in a triangle, so it leaves coloured fringes on every letter.
+gsettings set org.gnome.desktop.interface font-antialiasing 'grayscale'
+
+# Dark style, and a dock that hides. Both are about OLED burn-in: a light theme
+# lights every pixel of every window all day, and an always-visible dock is the
+# one thing on screen that never moves. The Yaru-dark themes are what Settings →
+# Appearance sets alongside the colour scheme for the default orange accent.
+gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+gsettings set org.gnome.desktop.interface gtk-theme 'Yaru-dark'
+gsettings set org.gnome.desktop.interface icon-theme 'Yaru-dark'
+gsettings set org.gnome.shell.extensions.dash-to-dock dock-fixed false
 
 sudo usermod -aG docker "$USER"   # takes effect at next boot, see Handy below
 
