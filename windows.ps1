@@ -18,6 +18,15 @@
 #              Everything else (LAN, audio, wifi, bluetooth) comes from Windows Update.
 #              Skip the MSI Driver Utility entirely.
 #   Apps       1Password (needed to sign in to Tailscale), Tailscale, Steam.
+#   Display    NVIDIA Control Panel → Change resolution: 3840x2160 @ 240Hz,
+#              "Use NVIDIA color settings", RGB, 10 bpc, Full range — over HDMI
+#              the default can be limited, which turns OLED black grey.
+#              Set up G-SYNC: on, full screen and windowed, "G-SYNC Compatible".
+#              Manage 3D settings → Max Frame Rate 237, so G-SYNC never hits the
+#              240Hz ceiling and falls back to V-Sync lag.
+#              Settings → Display → Use HDR on, then run "Windows HDR
+#              Calibration" from the Store with the monitor's DisplayHDR set to
+#              True Black 400.
 
 # Fast Startup off. Windows otherwise "shuts down" into a hibernation state that
 # leaves the NIC unable to wake — which kills Wake-on-LAN. Also frees hiberfil.sys.
