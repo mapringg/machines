@@ -309,12 +309,12 @@ gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:$KB
 git config --global user.name "Sorawit Kongnurat"
 git config --global user.email work@mapringg.com
 
-# mise is inert until it's hooked into the shell. One delimited block, appended
-# once, so re-runs don't stack lines onto the end of Ubuntu's stock .bashrc.
-if ! grep -q '^# --- machines ---' ~/.bashrc; then
+# mise is inert until it's hooked into the shell. Appended once, in the stock
+# .bashrc's own comment style, so re-runs don't stack lines onto the end of it.
+if ! grep -qF 'mise activate bash' ~/.bashrc; then
   cat >> ~/.bashrc <<'BASHRC'
 
-# --- machines ----------------------------------------------------------------
+# activate mise so the tools it manages are on the PATH
 eval "$(mise activate bash)"
 BASHRC
 fi
