@@ -236,8 +236,12 @@ command -v claude >/dev/null 2>&1 || curl -fsSL https://claude.ai/install.sh | b
 # which isn't on PATH yet during a first run, hence the full path. Lingering is
 # what keeps the service up at boot and after logout; the service setup would
 # only print this command if it lacked the rights, so do it here with sudo.
-# Updates are `t3 update`, not a re-run of this script.
-[ -x ~/.local/bin/t3 ] || curl -fsSL https://t3.codes/install.sh | sh
+# Updates are `t3 update`, not a re-run of this script. Nightly, because the
+# project moves fast and stable trails it anyway; `t3 update` keeps to the
+# channel of the version it's running, so this only has to be chosen once.
+# Back out with `t3 update --channel stable --allow-downgrade`, restoring a
+# copy of ~/.t3/userdata if state.sqlite was migrated past what stable reads.
+[ -x ~/.local/bin/t3 ] || curl -fsSL https://t3.codes/install.sh | T3CODE_CHANNEL=nightly sh
 sudo loginctl enable-linger "$USER"
 systemctl --user is-enabled t3code.service >/dev/null 2>&1 || ~/.local/bin/t3 service install
 
@@ -253,6 +257,19 @@ want=$'[Service]\nEnvironment=WAYLAND_DISPLAY=wayland-0 XDG_SESSION_TYPE=wayland
 if [ "$(cat "$dropin" 2>/dev/null)" != "$want" ]; then
   mkdir -p "${dropin%/*}"
   printf '%s\n' "$want" >"$dropin"
+  t3_changed=1
+fi
+
+# DNS here answers PostHog with ::, so T3's telemetry flush fails every second
+# and logs nine lines each time — about 10MB a day into boot-service.log, which
+# the service only ever appends to. Off, rather than left to fail.
+dropin=~/.config/systemd/user/t3code.service.d/telemetry.conf
+want=$'[Service]\nEnvironment=T3CODE_TELEMETRY_ENABLED=false'
+if [ "$(cat "$dropin" 2>/dev/null)" != "$want" ]; then
+  printf '%s\n' "$want" >"$dropin"
+  t3_changed=1
+fi
+if [ -n "${t3_changed:-}" ]; then
   systemctl --user daemon-reload
   systemctl --user restart t3code.service
 fi
