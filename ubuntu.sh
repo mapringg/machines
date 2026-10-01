@@ -337,6 +337,29 @@ eval "$(mise activate bash)"
 BASHRC
 fi
 
+# --- zapp (Voyager flashing) --------------------------------------------------
+# ZSA's CLI flasher, so firmware goes on from the terminal instead of Chrome's
+# WebUSB page: `zapp flash <Oryx URL or .bin>`, or `zapp update` for the newest
+# Oryx revision of the layout already on the board. Not in the archive; mise
+# pulls the prebuilt binary from GitHub releases and updates it with `mise up`.
+mise use -g github:zsa/zapp
+
+# Without a rule the keyboard's USB nodes are root-only, and flashing fails
+# with a permissions error. ZSA's rules file makes them world-writable for
+# every ZSA board; this is the two lines the Voyager needs — the keyboard
+# itself, and the STM32 bootloader it reboots into to be flashed — with
+# uaccess instead, which grants only whoever is logged in at the desk. It has
+# to sort before 73-seat-late.rules, which is what applies the tag.
+udev_rules=/etc/udev/rules.d/50-zsa.rules
+udev_want='SUBSYSTEM=="usb", ATTR{idVendor}=="3297", TAG+="uaccess"
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3297", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTR{idVendor}=="0483", ATTR{idProduct}=="df11", TAG+="uaccess"'
+if [ "$(cat "$udev_rules" 2>/dev/null)" != "$udev_want" ]; then
+  printf '%s\n' "$udev_want" | sudo tee "$udev_rules" >/dev/null
+  sudo udevadm control --reload-rules
+  sudo udevadm trigger
+fi
+
 # --- Wake-on-LAN --------------------------------------------------------------
 # NetworkManager owns this NIC and re-applies its ethernet settings a couple of
 # seconds into boot, so anything set behind its back — a systemd unit, a udev
