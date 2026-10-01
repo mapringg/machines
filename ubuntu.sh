@@ -274,6 +274,31 @@ if [ -n "${t3_changed:-}" ]; then
   systemctl --user restart t3code.service
 fi
 
+# --- Taildrop -----------------------------------------------------------------
+# The MacBook, Windows and the phone send here with the share sheet, but Linux
+# has no receiver: files wait in tailscaled's inbox until something runs
+# `tailscale file get`. This one loops on it, so they land in ~/Downloads as
+# they arrive. Unprivileged thanks to --operator (above); lingering (T3 Code)
+# keeps it up at the login screen. Rename, not the default skip, which leaves a
+# same-named file stuck in the inbox. Restart, since it exits if tailscaled does.
+unit=~/.config/systemd/user/taildrop.service
+want="[Unit]
+Description=Receive Taildrop files into ~/Downloads
+
+[Service]
+ExecStart=/usr/bin/tailscale file get --loop --conflict=rename %h/Downloads
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target"
+if [ "$(cat "$unit" 2>/dev/null)" != "$want" ]; then
+  printf '%s\n' "$want" >"$unit"
+  systemctl --user daemon-reload
+  systemctl --user restart taildrop.service
+fi
+systemctl --user enable --now taildrop.service
+
 # --- Handy (dictation) --------------------------------------------------------
 # No apt repo, only a .deb on GitHub releases; it updates itself from then on,
 # so this only runs once. The latest tag is read from the redirect rather than
