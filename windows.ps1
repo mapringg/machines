@@ -37,4 +37,37 @@ powercfg /h off
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\TimeZoneInformation" `
     /v RealTimeIsUniversal /t REG_DWORD /d 1 /f
 
-Rename-Computer -NewName windows
+# The rest is per-user, so run elevated from mapring's own session, not another
+# admin account. Text and mouse take effect at the next sign-in; the rename
+# below needs a reboot anyway.
+
+# Dark mode, and a taskbar that hides. Both are about OLED burn-in, same as
+# ubuntu.sh: a light theme lights every pixel of every window, and a pinned
+# taskbar is the one thing on screen that never moves. Auto-hide has no named
+# value — it's byte 8 of a binary blob (3 hides, 2 doesn't), which Explorer
+# only rereads when it restarts. It comes back on its own.
+$personalize = "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
+reg add $personalize /v AppsUseLightTheme /t REG_DWORD /d 0 /f
+reg add $personalize /v SystemUsesLightTheme /t REG_DWORD /d 0 /f
+$stuckRects = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\StuckRects3"
+$taskbar = (Get-ItemProperty $stuckRects).Settings
+if ($taskbar[8] -ne 3) {
+    $taskbar[8] = 3
+    Set-ItemProperty $stuckRects -Name Settings -Value $taskbar
+    Stop-Process -Name explorer
+}
+
+# Grayscale text smoothing instead of ClearType. ClearType assumes RGB stripes;
+# QD-OLED subpixels sit in a triangle, so it leaves coloured fringes on every
+# letter. FontSmoothingType 1 is plain antialiasing, 2 is ClearType.
+reg add "HKCU\Control Panel\Desktop" /v FontSmoothing /t REG_SZ /d 2 /f
+reg add "HKCU\Control Panel\Desktop" /v FontSmoothingType /t REG_DWORD /d 1 /f
+
+# Enhance pointer precision off. It's on by default — an acceleration curve —
+# and ubuntu.sh's flat pointer is meant to match this side of the desk, so
+# both have to be flat. Speed stays at the default 10, which is 1:1.
+reg add "HKCU\Control Panel\Mouse" /v MouseSpeed /t REG_SZ /d 0 /f
+reg add "HKCU\Control Panel\Mouse" /v MouseThreshold1 /t REG_SZ /d 0 /f
+reg add "HKCU\Control Panel\Mouse" /v MouseThreshold2 /t REG_SZ /d 0 /f
+
+if ($env:COMPUTERNAME -ne "windows") { Rename-Computer -NewName windows }
