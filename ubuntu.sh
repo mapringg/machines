@@ -13,12 +13,12 @@
 #   Drive      format the external drive ext4, label `Backup`, and leave it
 #              plugged in — the script refuses to run without it.
 #   After      sign in to 1Password, then Tailscale; restore ~/.ssh, ~/Work and
-#              the .env files; run `claude` once to sign in (T3 Code drives it);
-#              run the first backup from Déjà Dup; reboot (docker and input
-#              groups), then open Handy, pick Parakeet V3, turn on launch at
-#              login, and set Advanced → Paste Method to Clipboard
-#              (Ctrl+Shift+V) — ydotool's typing is slow, and terminals only
-#              paste with the Shift variant.
+#              the .env files; run `claude` and `codex` once each to sign in
+#              (T3 Code drives both); run the first backup from Déjà Dup;
+#              reboot (docker and input groups), then open Handy, pick
+#              Parakeet V3, turn on launch at login, and set Advanced → Paste
+#              Method to Clipboard (Ctrl+Shift+V) — ydotool's typing is slow,
+#              and terminals only paste with the Shift variant.
 #
 # Close Firefox before running: removing the snap fails while it is open.
 set -euo pipefail
@@ -251,6 +251,15 @@ sudo usermod -aG docker "$USER"   # takes effect at next boot, see Handy below
 # only add a layer between it and its own updates. It lands in ~/.local/bin,
 # which Ubuntu's stock .profile already puts on PATH.
 command -v claude >/dev/null 2>&1 || curl -fsSL https://claude.ai/install.sh | bash
+
+# --- Codex --------------------------------------------------------------------
+# OpenAI's official installer, for the same reasons; it also lands in
+# ~/.local/bin. Tested by file, as with t3 below: ~/.local/bin isn't on PATH yet
+# during a first run. That's also why PATH is handed to it — otherwise it
+# appends its own PATH block to ~/.bashrc. Non-interactive, or it stops to ask
+# whether to start Codex now.
+[ -x ~/.local/bin/codex ] || curl -fsSL https://chatgpt.com/codex/install.sh \
+  | PATH="$HOME/.local/bin:$PATH" CODEX_NON_INTERACTIVE=1 sh
 
 # --- T3 Code ------------------------------------------------------------------
 # Runs as a systemd user service so the phone and web apps can reach the agents
