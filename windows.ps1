@@ -21,12 +21,19 @@
 #   Display    NVIDIA Control Panel → Change resolution: 3840x2160 @ 240Hz,
 #              "Use NVIDIA color settings", RGB, 10 bpc, Full range — over HDMI
 #              the default can be limited, which turns OLED black grey.
-#              Set up G-SYNC: on, full screen and windowed, "G-SYNC Compatible".
+#              Same for the LG ULTRAGEAR at 2560x1440 @ 165Hz, then Settings →
+#              Display: LG portrait, 100%, left of the MSI as on Ubuntu, MSI
+#              150% and main display.
+#              Set up G-SYNC: on, full screen and windowed, "G-SYNC Compatible",
+#              and again with the LG selected under "Enable settings for the
+#              selected display model".
 #              Manage 3D settings → Max Frame Rate 237, so G-SYNC never hits the
 #              240Hz ceiling and falls back to V-Sync lag.
-#              Settings → Display → Use HDR on, then run "Windows HDR
-#              Calibration" from the Store with the monitor's DisplayHDR set to
-#              True Black 400.
+#              Settings → Display → Use HDR on, for the MSI only, then run
+#              "Windows HDR Calibration" from the Store with the monitor's
+#              DisplayHDR set to True Black 400. With HDR on, the MSI's desktop
+#              brightness is the "SDR content brightness" slider, not the
+#              monitor's own — match it to the LG with that.
 
 # Fast Startup off. Windows otherwise "shuts down" into a hibernation state that
 # leaves the NIC unable to wake — which kills Wake-on-LAN. Also frees hiberfil.sys.
