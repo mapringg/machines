@@ -142,7 +142,7 @@ if ! dpkg -s google-chrome-stable >/dev/null 2>&1; then
 fi
 
 # Chrome's circle fills its whole canvas; Firefox's globe fills 112 of 128px,
-# so Chrome sits visibly larger in the dock. Scale each size down to match,
+# so Chrome sits visibly larger in the dash. Scale each size down to match,
 # centred, into the user icon theme, which is looked up before /usr/share —
 # Chrome's updates rewrite the system copies and leave these alone. Rebuilt
 # from Chrome's own logos on each run, so a new logo carries over.
@@ -161,7 +161,7 @@ out.save(dst)
 PY
 done
 
-# The dock's favourites still name the snap's app id, which no longer exists,
+# The dash's favourites still name the snap's app id, which no longer exists,
 # leaving a dead icon where Firefox used to be. Same slot, real package.
 gsettings set org.gnome.shell favorite-apps \
   "$(gsettings get org.gnome.shell favorite-apps | sed 's/firefox_firefox.desktop/firefox.desktop/')"
@@ -189,6 +189,11 @@ gnome-extensions disable ding@rastersoft.com
 # already does half and full-screen snapping without it. Same session-mode
 # story as Desktop Icons, so disable rather than uninstall.
 gnome-extensions disable tiling-assistant@ubuntu.com
+
+# Ubuntu Dock. Hidden, for OLED burn-in, it glitched across the two monitors'
+# mixed scales; stock GNOME's dash only shows in the overview, so it never
+# sits still on screen and has nothing to hide. Same story again.
+gnome-extensions disable ubuntu-dock@ubuntu.com
 
 # SDR, 240Hz, 150%, full-range RGB. SDR because HDR greys out the monitor's own
 # Brightness and sRGB mode, and those are what make SDR text look right on this
@@ -226,20 +231,18 @@ else
   args=(--logical-monitor --primary --scale 1.5 "${msi_mode[@]}")
   want="$msi 3840x2160@239.990 default full (0, 0) 1.5 normal yes"
 fi
+[[ $(layout) == "$want" ]] || gdctl set --persistent "${args[@]}"
 
 # Grayscale text smoothing. Subpixel smoothing assumes RGB stripes; QD-OLED
 # subpixels sit in a triangle, so it leaves coloured fringes on every letter.
 gsettings set org.gnome.desktop.interface font-antialiasing 'grayscale'
 
-[[ $(layout) == "$want" ]] || gdctl set --persistent "${args[@]}"
-# Dark style, and a dock that hides. Both are about OLED burn-in: a light theme
-# lights every pixel of every window all day, and an always-visible dock is the
-# one thing on screen that never moves. The Yaru-dark themes are what Settings →
-# Appearance sets alongside the colour scheme for the default orange accent.
+# Dark style, for OLED burn-in: a light theme lights every pixel of every
+# window all day. The Yaru-dark themes are what Settings → Appearance sets
+# alongside the colour scheme for the default orange accent.
 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
 gsettings set org.gnome.desktop.interface gtk-theme 'Yaru-dark'
 gsettings set org.gnome.desktop.interface icon-theme 'Yaru-dark'
-gsettings set org.gnome.shell.extensions.dash-to-dock dock-fixed false
 
 sudo usermod -aG docker "$USER"   # takes effect at next boot, see Handy below
 
