@@ -197,22 +197,41 @@ gnome-extensions disable tiling-assistant@ubuntu.com
 # pick limited for a 4K TV timing, which lifts OLED black to grey. None of this
 # is in gsettings — it lives in ~/.config/monitors.xml, so gdctl writes it the
 # same way Settings does. `gdctl set` replaces the whole layout, hence mode and
-# scale too — the monitor's EDID prefers a 60Hz mode. The connector is read
-# rather than fixed: the monitor has been HDMI-1 and HDMI-2. Skipped once
-# applied, since applying a layout blanks the screen for a moment.
-conn=$(gdctl show | awk '/Monitor .*Microstep/ {print $2; exit}')
-state=$(gdctl show --verbose)
-if ! { gdctl show | grep -A1 'Current mode' | grep -q '3840x2160@239.990' &&
-       grep -q 'color-mode ⇒  default' <<<"$state" &&
-       grep -q 'rgb-range ⇒  full' <<<"$state"; }; then
-  gdctl set --persistent --logical-monitor --primary --scale 1.5 \
-    --monitor "$conn" --mode 3840x2160@239.990 --color-mode default --rgb-range full
+# scale too — the monitor's EDID prefers a 60Hz mode — and the LG ULTRAGEAR
+# with it: left of the MSI, turned portrait, centred on its height, at 100%
+# since 1440p at 32" is already big enough. It's left out if it's unplugged,
+# or the layout would be refused. Connectors are read rather than fixed: the
+# MSI has been HDMI-1, HDMI-2 and DP-2. Skipped once applied, since applying
+# a layout blanks the screens for a moment.
+layout() {   # one sorted line per monitor: mode, colour, range, then placement
+  gdctl show --verbose | sed 's/[│├└─]//g; s/^ *//' | awk '
+    /^Logical monitors/ { logical = 1 }
+    !logical && /^Monitor / { mon = $2 }
+    !logical && /^[0-9]+x[0-9]+@/ { mode = $1 }
+    !logical && /^is-current ⇒/ { m[mon] = mode }
+    !logical && /^(color-mode|rgb-range) ⇒/ { m[mon] = m[mon] " " $3 }
+    logical && /^(Position|Scale|Transform|Primary):/ { sub(/^[^:]*: /, ""); l = l " " $0 }
+    logical && /^[A-Z]+-[0-9]+ \(/ { print $1, m[$1] l; l = "" }' | sort
+}
+msi=$(gdctl show | awk '/Monitor .*Microstep/ {print $2; exit}')
+lg=$(gdctl show | awk '/Monitor .*LG Electronics/ {print $2; exit}')
+msi_mode=(--monitor "$msi" --mode 3840x2160@239.990 --color-mode default --rgb-range full)
+lg_mode=(--monitor "$lg" --mode 2560x1440@164.958 --color-mode default --rgb-range full)
+if [[ $lg ]]; then   # 2560 tall portrait, 1440 tall MSI at 150%: (2560 − 1440) / 2
+  args=(--logical-monitor --scale 1 --transform 90 "${lg_mode[@]}"
+        --logical-monitor --primary --scale 1.5 --x 1440 --y 560 "${msi_mode[@]}")
+  want=$(printf '%s\n' "$lg 2560x1440@164.958 default full (0, 0) 1.0 90 no" \
+    "$msi 3840x2160@239.990 default full (1440, 560) 1.5 normal yes" | sort)
+else
+  args=(--logical-monitor --primary --scale 1.5 "${msi_mode[@]}")
+  want="$msi 3840x2160@239.990 default full (0, 0) 1.5 normal yes"
 fi
 
 # Grayscale text smoothing. Subpixel smoothing assumes RGB stripes; QD-OLED
 # subpixels sit in a triangle, so it leaves coloured fringes on every letter.
 gsettings set org.gnome.desktop.interface font-antialiasing 'grayscale'
 
+[[ $(layout) == "$want" ]] || gdctl set --persistent "${args[@]}"
 # Dark style, and a dock that hides. Both are about OLED burn-in: a light theme
 # lights every pixel of every window all day, and an always-visible dock is the
 # one thing on screen that never moves. The Yaru-dark themes are what Settings →
