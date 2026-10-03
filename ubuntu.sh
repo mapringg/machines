@@ -114,6 +114,30 @@ out.save(dst)
 PY
 done
 
+# Its postinst adds Paper's apt repo, so apt upgrades it from then on
+if ! dpkg -s paper >/dev/null 2>&1; then
+  curl -fsSLo /tmp/paper.deb https://download.paper.design/linux/deb
+  sudo apt install -y /tmp/paper.deb
+  rm /tmp/paper.deb
+fi
+
+# Paper's tile fills ~103/128px; grow it to the same 112/128. The faint shadow
+# around it still fits the canvas.
+for src in /usr/share/icons/hicolor/*/apps/paper-desktop.png; do
+  dir=${src#/usr/share/icons/}; dir=~/.local/share/icons/${dir%/*}
+  mkdir -p "$dir"
+  python3 - "$src" "$dir/paper-desktop.png" <<'PY'
+import sys
+from PIL import Image
+src, dst = sys.argv[1:]
+im = Image.open(src).convert("RGBA")
+l, _, r, _ = im.getchannel("A").point(lambda a: 255 if a > 128 else 0).getbbox()
+side = round(im.width * im.width * 112 / 128 / (r - l))
+c = (side - im.width) // 2
+im.resize((side, side), Image.LANCZOS).crop((c, c, c + im.width, c + im.width)).save(dst)
+PY
+done
+
 # Repoint the dash favourite from the removed snap
 gsettings set org.gnome.shell favorite-apps \
   "$(gsettings get org.gnome.shell favorite-apps | sed 's/firefox_firefox.desktop/firefox.desktop/')"
