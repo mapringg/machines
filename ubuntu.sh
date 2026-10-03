@@ -374,6 +374,10 @@ StartupWMClass=jetbrains-studio
 StartupNotify=true
 DESKTOP
 
+# Emulator's bundled Qt drops _NET_WM_PING, so any timeout fires. Remove once
+# the emulator ships the fix: https://issuetracker.google.com/issues/563833202
+gsettings set org.gnome.mutter check-alive-timeout 0
+
 if ! grep -qF 'ANDROID_HOME' ~/.bashrc; then
   cat >> ~/.bashrc <<'BASHRC'
 
