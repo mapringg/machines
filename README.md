@@ -26,45 +26,24 @@ Away from home I SSH in from the MacBook over Tailscale.
                             └──── umbrel    (always on; sends the wake packet)
 ```
 
-**Power.** Automatic suspend is off. The desktop sleeps only when I tell it to:
-
-    ssh ubuntu 'systemctl suspend'
-
-and umbrel wakes it with a magic packet. umbrel is an appliance with no script of
-its own, and installing `wakeonlan` there wouldn't survive an OS update, so the
-packet is sent with the python3 it already has:
-
-    ssh umbrel 'python3 -c "
-    import socket
-    pkt = b\"\\xff\"*6 + bytes.fromhex(\"047c16483772\")*16
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    s.sendto(pkt, (\"192.168.1.255\", 9))"'
-
-`047c16483772` is enp12s0's MAC. It has to be sent from the LAN — a magic packet
-won't cross Tailscale, which is the whole reason this job belongs to umbrel.
-
-From the phone, both are Termius snippets — *Sleep PC* targeting `ubuntu`, *Wake PC*
-targeting `umbrel`. The snippet already runs on umbrel, so it drops the outer quoting:
+**Power.** Automatic suspend is off. The desktop sleeps only when told to, and umbrel
+wakes it with a magic packet: it has to come from the LAN, since a magic packet won't
+cross Tailscale. umbrel is an appliance, so the packet uses the python3 it already
+has. Both are Termius snippets on the phone, *Sleep PC* on `ubuntu` and *Wake PC* on
+`umbrel` (`047c16483772` is enp12s0's MAC):
 
     systemctl suspend
 
     python3 -c 'import socket;s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM);s.setsockopt(socket.SOL_SOCKET,socket.SO_BROADCAST,1);s.sendto(b"\xff"*6+bytes.fromhex("047c16483772")*16,("192.168.1.255",9))'
 
-Measured: SSH answers about 15 seconds after the packet. Asleep it draws a few watts
-instead of ~100W; the PC is in my bedroom and the LED is annoying at night.
+SSH answers about 15 seconds after the packet. It never needs shutting down: the TPM
+unlocks LUKS, so `sudo reboot` over SSH comes back on its own, and after a power cut
+the BIOS powers it back on.
 
-Sleep/wake is the whole routine; it never needs shutting down. A cold boot doesn't
-stop at a passphrase prompt either — `ubuntu.sh` enrolls the TPM — so `sudo reboot`
-over SSH comes back on its own, and after a power cut the BIOS powers it back on.
-
-**Access.** Tailscale SSH, so there are no host keys to manage. tmux so a dropped
-connection never loses work. ubuntu also runs a stock sshd bound to loopback only;
-it's never reached, but T3 Code won't offer "Open in VS Code" to the MacBook without it.
+**Access.** Tailscale SSH, so there are no host keys to manage, and tmux so a dropped
+connection never loses work.
 
 **Backups.** Déjà Dup to an external USB drive, daily, 30 days kept, encrypted.
-It is *not* in the installer's Default selection, so `ubuntu.sh` installs and
-configures it. Everything is gsettings, so nothing about it lives in a GUI only.
 
 ## Manual steps
 
@@ -159,16 +138,13 @@ these, and the machine is in my bedroom.
 | | 65 °C → 50% | 70 °C → 70% |
 | | 80 °C → 100% | 85 °C → 100% |
 
-SYS_FAN reads the motherboard sensor, which idles around 35–45 °C — so a curve that
-starts at 50% duty runs the case fans hard permanently. The CPU curve stays flat
-through 65 °C because the 7800X3D sits in the 55–70 °C band during ordinary dev work;
-the 80 °C → 100% point is the safety net and shouldn't move.
+SYS_FAN reads the motherboard sensor, which idles at 35–45 °C, so its curve starts
+low. The CPU curve stays flat through the 7800X3D's 55–70 °C dev-work band.
 
 ## Considered and rejected
 
 - **Buying a mini PC / home server** — nothing under ~40,000 THB beats the 7800X3D I
-  already own, and DDR4/DDR5 are both in a historic price spike. The desk is where I
-  work; the chair, keyboard and monitor are already paid for.
+  already own.
 - **WSL2** — fragile auto-start after reboot, and Windows Update reboots at will.
 - **Staying on Omarchy** — heavily customised, and I didn't choose most of it. The point
   is to know what changed and why.
@@ -176,21 +152,10 @@ the 80 °C → 100% point is the safety net and shouldn't move.
   Windows at all, so I'd need a second mechanism anyway.
 - **Sway or a minimal WM** — would mean writing a WM config from scratch. Stock GNOME is
   less deviation, which matters more than saving RAM. Resources were never the constraint.
-- **restic / borg by hand** — repository, password, timer and retention is four
-  moving parts to own. Déjà Dup 50 *is* restic underneath — the destination is a
-  real restic repository — so this gets the same engine with none of the wiring.
-- **Syncthing** — replication, not backup. Dropped with Omarchy.
+- **restic / borg by hand** — Déjà Dup 50 *is* restic underneath, without the wiring.
 - **Headless desktop** — I'm a web developer; I need a browser at the desk. The NVIDIA
   card also idles *higher* headless, so it saves nothing.
-- **The Firefox snap** — kept as long as possible, but a confined snap can't execute
-  `/opt/1Password/1Password-BrowserSupport`, so the browser extension can never reach
-  the desktop app. `ubuntu.sh` uses Mozilla's deb and pins it.
-- **The Chromium snap** — the social-intelligence verify skill keeps its browser
-  profile under `~/.cache`, and a confined snap can't write to hidden directories
-  in `$HOME`. `ubuntu.sh` installs Google's Chrome deb instead.
-- **Ghostty** — a terminal to install and configure on two machines, replacing one
-  that already ships and works. It was originally chosen for the Nerd Font it
-  bundles, which mattered only for `eza`'s icons over ssh — and `eza` left with
-  Omarchy. Ptyxis and Terminal.app are fine.
+- **Ghostty** — the stock terminals work, and its bundled Nerd Font only mattered for
+  `eza`, which left with Omarchy.
 - **Autologin** — not needed. Remote work is terminal-only, and SSH works fine with the
   machine sitting at a login screen. An un-logged-in desktop costs no RAM.
