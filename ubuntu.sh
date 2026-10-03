@@ -1,41 +1,17 @@
 #!/usr/bin/env bash
-# ubuntu.sh — desktop, 931GB NVMe, user mapring, hostname `ubuntu`
-# Ubuntu 26.04.1 LTS Desktop, stock GNOME. Safe to re-run.
-#
-# MANUAL STEPS — do these first, they can't be scripted:
-#   BIOS       see README — shared with windows.ps1
-#   Installer  Default selection; tick both third-party boxes (the NVIDIA driver
-#              comes from there, Canonical-signed, so Secure Boot needs no MOK
-#              enrolment); "Erase disk and install" onto the 931GB drive;
-#              "Encrypt with passphrase"; hostname `ubuntu`, user `mapring`.
-#              Delete all partitions on BOTH disks during the Windows install
-#              first, so Windows can't put its boot files on this drive.
-#   Drive      format the external drive ext4, label `Backup`, and leave it
-#              plugged in — the script refuses to run without it.
-#   After      sign in to 1Password, then Tailscale; restore ~/.ssh, ~/Work and
-#              the .env files; run `claude` and `codex` once each to sign in
-#              (T3 Code drives both); run the first backup from Déjà Dup;
-#              reboot (docker and input groups), then open Handy, pick
-#              Parakeet V3, turn on launch at login, and set Advanced → Paste
-#              Method to Clipboard (Ctrl+Shift+V) — ydotool's typing is slow,
-#              and terminals only paste with the Shift variant.
-#
-# Close Firefox before running: removing the snap fails while it is open.
+# Ubuntu 26.04 desktop, hostname `ubuntu`. Safe to re-run.
+# Do the manual steps in README first, and close Firefox: the snap can't be
+# removed while it's open.
 set -euo pipefail
 
 NIC=enp12s0
-# The installer's crypttab names the LUKS partition by UUID. Not /dev/nvmeXn1pY:
-# the kernel doesn't keep the two NVMe drives in the same order across boots,
-# and on the wrong boot that path is the Windows drive.
+# By UUID: NVMe order changes across boots, and the wrong path is Windows
 LUKS=/dev/disk/by-uuid/$(awk '$2 ~ /^UUID=/ {sub(/^UUID=/, "", $2); print $2; exit}' /etc/crypttab)
-# Déjà Dup is pointed at the backup drive by UUID, so it has to be plugged in.
-# Checked up front rather than failing halfway through.
+# Déjà Dup finds the drive by UUID, so it must be plugged in
 BACKUP=/dev/disk/by-label/Backup
 [[ -e $BACKUP ]] || { echo "Plug in the Backup drive first." >&2; exit 1; }
 
 # --- third-party repositories -------------------------------------------------
-# Everything else comes from the Ubuntu archive. These don't ship there.
-
 if [ ! -f /etc/apt/sources.list.d/1password.list ]; then
   curl -sS https://downloads.1password.com/linux/keys/1password.asc \
     | sudo gpg --dearmor -o /usr/share/keyrings/1password-archive-keyring.gpg
@@ -59,8 +35,7 @@ if [ ! -f /etc/apt/sources.list.d/vscode.list ]; then
     | sudo tee /etc/apt/sources.list.d/vscode.list >/dev/null
 fi
 
-# GitHub CLI. The archive has a `gh` too, but it lags behind and GitHub asks
-# people not to use it. The key is already binary, so no dearmor.
+# The archive's gh lags behind. GitHub's key is already binary, so no dearmor
 if [ ! -f /etc/apt/sources.list.d/github-cli.list ]; then
   sudo install -dm755 /etc/apt/keyrings
   curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
@@ -71,22 +46,14 @@ fi
 
 command -v tailscale >/dev/null || curl -fsSL https://tailscale.com/install.sh | sh
 
-# --ssh is what removes host-key management entirely; without it this machine is
-# on the tailnet but not reachable the way the rest of the setup assumes.
-# Prints a URL to authenticate in the browser, so 1Password has to be signed in.
+# Prints a sign-in URL, so sign in to 1Password first
 tailscale status >/dev/null 2>&1 || sudo tailscale up --ssh
 
-# Serve config is root-only by default, and `t3 pair --tailscale` publishes
-# T3 Code with `tailscale serve` as me, so it's denied without this.
+# Lets `t3 pair --tailscale` run `tailscale serve` without root
 sudo tailscale set --operator="$USER"
 
-# A real sshd, but loopback only. T3 Code enables "Open in VS Code" from the
-# MacBook only if something listens on 127.0.0.1:22 or ::1:22, and Tailscale
-# SSH doesn't — it intercepts port 22 on the tailnet address alone. The link it
-# builds points at the MagicDNS name, which Tailscale SSH still answers, so
-# this sshd is never actually reached from outside. Written before the install
-# so it never listens anywhere else, even for a moment. Ubuntu starts sshd from
-# ssh.socket, whose addresses a generator derives from ListenAddress on
+# Loopback-only sshd: T3 Code offers "Open in VS Code" only if :22 listens
+# locally. Config first, so it never listens elsewhere; ssh.socket reads it on
 # daemon-reload.
 sshd_conf=/etc/ssh/sshd_config.d/10-loopback.conf
 sshd_want=$'ListenAddress 127.0.0.1\nListenAddress ::1\nPasswordAuthentication no\nKbdInteractiveAuthentication no'
@@ -101,10 +68,8 @@ if [ -n "${sshd_changed:-}" ]; then
   sudo systemctl restart ssh.socket
 fi
 
-# Firefox from Mozilla, not the Ubuntu snap. A confined snap can't execute
-# /opt/1Password/1Password-BrowserSupport, so the extension can never reach the
-# desktop app and every unlock has to be done twice. Pinned so the `firefox`
-# deb in the archive — a stub that reinstalls the snap — can't win.
+# Mozilla's deb, not the snap: a confined snap can't run 1Password's browser
+# helper. Pinned so the archive's `firefox` stub can't bring the snap back.
 if [ ! -f /etc/apt/sources.list.d/mozilla.list ]; then
   sudo install -dm755 /etc/apt/keyrings
   curl -fsSL https://packages.mozilla.org/apt/repo-signing-key.gpg \
@@ -117,35 +82,23 @@ fi
 if snap list firefox >/dev/null 2>&1; then sudo snap remove --purge firefox; fi
 
 # --- packages -----------------------------------------------------------------
-# docker.io, deja-dup and tmux are all in the 26.04 archive, so no vendor repo
-# is needed for them.
-# The upgrade is here because an install image is always months behind by the
-# time it's used, and "ready to work" doesn't mean "37 updates pending".
 sudo apt update
 sudo apt upgrade -y
 sudo apt install -y git tmux lazygit deja-dup docker.io tpm2-tools \
                     1password mise code gh python3-pil
 
-# --allow-downgrades because Ubuntu's `firefox` stub carries an epoch
-# (1:1snap1-...) and Mozilla's real version does not, so apt scores the genuine
-# package as older. The pin already decided which one we want.
+# The stub carries an epoch, so apt sees Mozilla's real firefox as older
 sudo apt install -y --allow-downgrades firefox
 
-# Google Chrome, for social-intelligence's verify skill, which drives it over
-# CDP. Not the Chromium snap: the skill keeps its browser profile under
-# ~/.cache, and a confined snap can't write to hidden directories in $HOME.
-# The .deb adds Google's apt repo itself, so apt keeps it updated from then on.
+# For the verify skill. Not the Chromium snap: it can't write to ~/.cache
 if ! dpkg -s google-chrome-stable >/dev/null 2>&1; then
   curl -fsSLo /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
   sudo apt install -y /tmp/chrome.deb
   rm /tmp/chrome.deb
 fi
 
-# Chrome's circle fills its whole canvas; Firefox's globe fills 112 of 128px,
-# so Chrome sits visibly larger in the dash. Scale each size down to match,
-# centred, into the user icon theme, which is looked up before /usr/share —
-# Chrome's updates rewrite the system copies and leave these alone. Rebuilt
-# from Chrome's own logos on each run, so a new logo carries over.
+# Shrink Chrome's dock icon to Firefox's 112/128px. The user icon theme wins
+# over /usr/share, so Chrome updates leave it alone.
 for src in /opt/google/chrome/product_logo_*.png; do
   n=${src##*_}; n=${n%.png}
   mkdir -p ~/.local/share/icons/hicolor/${n}x${n}/apps
@@ -161,53 +114,33 @@ out.save(dst)
 PY
 done
 
-# The dash's favourites still name the snap's app id, which no longer exists,
-# leaving a dead icon where Firefox used to be. Same slot, real package.
+# Repoint the dash favourite from the removed snap
 gsettings set org.gnome.shell favorite-apps \
   "$(gsettings get org.gnome.shell favorite-apps | sed 's/firefox_firefox.desktop/firefox.desktop/')"
 
-# Alphabetical app grid. GNOME orders it by install time and keeps a saved
-# layout; clearing the layout is what makes it sort.
+# Clearing the saved layout makes the app grid sort alphabetically
 gsettings set org.gnome.shell app-picker-layout "[]"
 
-# Flat pointer, no acceleration. GNOME's default is libinput's adaptive curve,
-# which is neither Windows' curve nor off, so small moves land slightly wrong
-# for a hand trained on the Windows side of this same desk. Speed too: Windows
-# moves the cursor in physical pixels at any scale, GNOME in logical ones, so at
-# 150% the same mouse ran 1.5× faster here. With a flat profile the speed is a
-# plain multiplier of 1 + speed, and 1 − 0.33 undoes the 1.5.
+# Flat, like Windows. Speed scales by 1 + speed, so -0.33 undoes GNOME's
+# logical-pixel 1.5× at 150%.
 gsettings set org.gnome.desktop.peripherals.mouse accel-profile 'flat'
 gsettings set org.gnome.desktop.peripherals.mouse speed -0.33
 
-# Desktop Icons. Nothing lives on the desktop, and it hitches clicks and drags
-# on the background. Ubuntu enables it from the session mode, so disabling it
-# is what sticks — it lands in org.gnome.shell disabled-extensions.
+# Ubuntu enables these per session mode, so disable rather than uninstall.
+# Desktop Icons hitch clicks on the background.
 gnome-extensions disable ding@rastersoft.com
 
-# Tiling Assistant. Ubuntu's take on window snapping: it pops a picker to fill
-# the other half after each snap and takes over Super+arrows. Stock GNOME
-# already does half and full-screen snapping without it. Same session-mode
-# story as Desktop Icons, so disable rather than uninstall.
+# Tiling Assistant hijacks Super+arrows; stock GNOME already snaps
 gnome-extensions disable tiling-assistant@ubuntu.com
 
-# Ubuntu Dock. Hidden, for OLED burn-in, it glitched across the two monitors'
-# mixed scales; stock GNOME's dash only shows in the overview, so it never
-# sits still on screen and has nothing to hide. Same story again.
+# Ubuntu Dock glitches across mixed scales
 gnome-extensions disable ubuntu-dock@ubuntu.com
 
-# SDR, 240Hz, 150%, full-range RGB. SDR because HDR greys out the monitor's own
-# Brightness and sRGB mode, and those are what make SDR text look right on this
-# wide-gamut QD-OLED; Windows still gets HDR for games, since the monitor
-# follows whatever signal it's sent. Full range because over HDMI "auto" can
-# pick limited for a 4K TV timing, which lifts OLED black to grey. None of this
-# is in gsettings — it lives in ~/.config/monitors.xml, so gdctl writes it the
-# same way Settings does. `gdctl set` replaces the whole layout, hence mode and
-# scale too — the monitor's EDID prefers a 60Hz mode — and the LG ULTRAGEAR
-# with it: left of the MSI, turned portrait, centred on its height, at 100%
-# since 1440p at 32" is already big enough. It's left out if it's unplugged,
-# or the layout would be refused. Connectors are read rather than fixed: the
-# MSI has been HDMI-1, HDMI-2 and DP-2. Skipped once applied, since applying
-# a layout blanks the screens for a moment.
+# Monitors live in ~/.config/monitors.xml, written by gdctl like Settings does.
+# SDR keeps the MSI's own brightness and sRGB mode; full range stops HDMI from
+# picking limited, which greys OLED black. `gdctl set` replaces the whole
+# layout and blanks the screens, so it only runs on drift. Connectors change, so
+# they're looked up, and the LG is left out when unplugged.
 layout() {   # one sorted line per monitor: mode, colour, range, then placement
   gdctl show --verbose | sed 's/[│├└─]//g; s/^ *//' | awk '
     /^Logical monitors/ { logical = 1 }
@@ -233,13 +166,10 @@ else
 fi
 [[ $(layout) == "$want" ]] || gdctl set --persistent "${args[@]}"
 
-# Grayscale text smoothing. Subpixel smoothing assumes RGB stripes; QD-OLED
-# subpixels sit in a triangle, so it leaves coloured fringes on every letter.
+# QD-OLED subpixels aren't RGB stripes, so subpixel smoothing fringes
 gsettings set org.gnome.desktop.interface font-antialiasing 'grayscale'
 
-# Dark style, for OLED burn-in: a light theme lights every pixel of every
-# window all day. The Yaru-dark themes are what Settings → Appearance sets
-# alongside the colour scheme for the default orange accent.
+# Dark style for OLED burn-in; the themes match Settings → Appearance
 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
 gsettings set org.gnome.desktop.interface gtk-theme 'Yaru-dark'
 gsettings set org.gnome.desktop.interface icon-theme 'Yaru-dark'
@@ -247,42 +177,25 @@ gsettings set org.gnome.desktop.interface icon-theme 'Yaru-dark'
 sudo usermod -aG docker "$USER"   # takes effect at next boot, see Handy below
 
 # --- Claude Code --------------------------------------------------------------
-# The official installer, same as macbook.sh — it self-updates, so mise would
-# only add a layer between it and its own updates. It lands in ~/.local/bin,
-# which Ubuntu's stock .profile already puts on PATH.
+# Self-updating, so not through mise
 command -v claude >/dev/null 2>&1 || curl -fsSL https://claude.ai/install.sh | bash
 
 # --- Codex --------------------------------------------------------------------
-# OpenAI's official installer, for the same reasons; it also lands in
-# ~/.local/bin. Tested by file, as with t3 below: ~/.local/bin isn't on PATH yet
-# during a first run. That's also why PATH is handed to it — otherwise it
-# appends its own PATH block to ~/.bashrc. Non-interactive, or it stops to ask
-# whether to start Codex now.
+# By file: ~/.local/bin isn't on PATH on a first run. PATH is passed so the
+# installer doesn't append its own to ~/.bashrc.
 [ -x ~/.local/bin/codex ] || curl -fsSL https://chatgpt.com/codex/install.sh \
   | PATH="$HOME/.local/bin:$PATH" CODEX_NON_INTERACTIVE=1 sh
 
 # --- T3 Code ------------------------------------------------------------------
-# Runs as a systemd user service so the phone and web apps can reach the agents
-# here without a terminal left open. The installer also lands in ~/.local/bin,
-# which isn't on PATH yet during a first run, hence the full path. Lingering is
-# what keeps the service up at boot and after logout; the service setup would
-# only print this command if it lacked the rights, so do it here with sudo.
-# Updates are `t3 update`, not a re-run of this script. Nightly, because the
-# project moves fast and stable trails it anyway; `t3 update` keeps to the
-# channel of the version it's running, so this only has to be chosen once.
-# Back out with `t3 update --channel stable --allow-downgrade`, restoring a
-# copy of ~/.t3/userdata if state.sqlite was migrated past what stable reads.
+# User service, so the phone and web apps reach it without a terminal; lingering
+# keeps it up at boot. Update with `t3 update`, which stays on nightly. Back to
+# stable: `t3 update --channel stable --allow-downgrade`.
 [ -x ~/.local/bin/t3 ] || curl -fsSL https://t3.codes/install.sh | T3CODE_CHANNEL=nightly sh
 sudo loginctl enable-linger "$USER"
 systemctl --user is-enabled t3code.service >/dev/null 2>&1 || ~/.local/bin/t3 service install
 
-# Lingering starts the service at boot, before GNOME exports the session's
-# display variables, and T3's "open in editor" hands its own environment to
-# `code` — which then dies with "Missing X server or $DISPLAY", even when a
-# window is already open, since Electron sets up the display before handing off
-# to it. Fixed values are safe: GNOME's socket is always wayland-0, and Wayland
-# needs no auth file. DISPLAY wouldn't do — Xwayland's XAUTHORITY is renamed at
-# each login. A drop-in, so `t3 service install` can't overwrite it.
+# Started at boot, the service lacks GNOME's display variables, so `code` can't
+# open. wayland-0 is fixed; a drop-in survives `t3 service install`.
 dropin=~/.config/systemd/user/t3code.service.d/display.conf
 want=$'[Service]\nEnvironment=WAYLAND_DISPLAY=wayland-0 XDG_SESSION_TYPE=wayland'
 if [ "$(cat "$dropin" 2>/dev/null)" != "$want" ]; then
@@ -291,9 +204,7 @@ if [ "$(cat "$dropin" 2>/dev/null)" != "$want" ]; then
   t3_changed=1
 fi
 
-# DNS here answers PostHog with ::, so T3's telemetry flush fails every second
-# and logs nine lines each time — about 10MB a day into boot-service.log, which
-# the service only ever appends to. Off, rather than left to fail.
+# Local DNS answers PostHog with ::, and failed flushes log ~10MB a day
 dropin=~/.config/systemd/user/t3code.service.d/telemetry.conf
 want=$'[Service]\nEnvironment=T3CODE_TELEMETRY_ENABLED=false'
 if [ "$(cat "$dropin" 2>/dev/null)" != "$want" ]; then
@@ -306,12 +217,8 @@ if [ -n "${t3_changed:-}" ]; then
 fi
 
 # --- Taildrop -----------------------------------------------------------------
-# The MacBook, Windows and the phone send here with the share sheet, but Linux
-# has no receiver: files wait in tailscaled's inbox until something runs
-# `tailscale file get`. This one loops on it, so they land in ~/Downloads as
-# they arrive. Unprivileged thanks to --operator (above); lingering (T3 Code)
-# keeps it up at the login screen. Rename, not the default skip, which leaves a
-# same-named file stuck in the inbox. Restart, since it exits if tailscaled does.
+# Linux has no receiver, so this drains the inbox into ~/Downloads. Rename,
+# since skip leaves a same-named file stuck in the inbox.
 unit=~/.config/systemd/user/taildrop.service
 want="[Unit]
 Description=Receive Taildrop files into ~/Downloads
@@ -331,9 +238,8 @@ fi
 systemctl --user enable --now taildrop.service
 
 # --- Handy (dictation) --------------------------------------------------------
-# No apt repo, only a .deb on GitHub releases; it updates itself from then on,
-# so this only runs once. The latest tag is read from the redirect rather than
-# the API, which rate-limits.
+# Only a .deb on GitHub, then it self-updates. Tag from the redirect, since the
+# API rate-limits.
 if ! dpkg -s handy >/dev/null 2>&1; then
   tag=$(curl -fsSLo /dev/null -w '%{url_effective}' https://github.com/cjpais/Handy/releases/latest)
   ver=${tag##*/v}
@@ -342,11 +248,8 @@ if ! dpkg -s handy >/dev/null 2>&1; then
   rm /tmp/handy.deb
 fi
 
-# Handy's tray glyphs fill three quarters of their canvas, 1Password's 89%
-# (227 of 256px), so Handy sits visibly smaller in the top bar. Scale each one
-# up to match, centred. The originals are diverted rather than overwritten, so
-# Handy's updates land in the .orig files instead of undoing this, and a
-# re-run rebuilds from them. Handy picks the new icons up at its next start.
+# Scale the tray glyphs to 1Password's 227/256px. Diverted, so Handy's updates
+# write the .orig files instead of undoing this.
 for f in handy handy_warning recording transcribing; do
   png=/usr/lib/Handy/resources/$f.png
   [ -n "$(dpkg-divert --list "$png")" ] || sudo dpkg-divert --rename --divert "$png.orig" --add "$png"
@@ -364,26 +267,19 @@ out.save(dst)
 PY
 done
 
-# The .deb puts its 256px icon in hicolor/256x256@2, a folder meant for 512px
-# icons, so at this display's scale (1.5, which the Shell rounds up to 2) the
-# app grid loads it at half size and stretches it. Pointing the launcher
-# straight at the file skips that lookup. Rebuilt on each run so Handy's own
-# changes to its launcher carry over.
+# The 256px icon sits in a folder for 512px ones and renders blurry at 150%,
+# so the launcher points straight at it
 mkdir -p ~/.local/share/applications
 sed 's|^Icon=.*|Icon=/usr/share/icons/hicolor/256x256@2/apps/handy.png|' \
   /usr/share/applications/Handy.desktop > ~/.local/share/applications/Handy.desktop
 
-# Handy types into the focused window through ydotool: wtype doesn't work on
-# GNOME's compositor. ydotoold needs /dev/uinput, which Ubuntu's udev rule
-# gives to the input group — so the service only starts after a reboot. Not a
-# re-login: lingering (T3 Code, above) keeps the user manager alive across
-# logout, and with it the group list every session process inherits.
+# Handy pastes through ydotool; wtype fails on GNOME. /dev/uinput needs the
+# input group, which applies only after a reboot: lingering keeps the session.
 sudo apt install -y ydotool
 sudo usermod -aG input "$USER"
 systemctl --user enable ydotool.service
 
-# Wayland won't let Handy grab a global hotkey itself, so GNOME owns it.
-# Super+O is GNOME's rotation-lock key by default, meaningless on a desktop.
+# Wayland apps can't grab global hotkeys. Super+O is rotation lock by default
 gsettings set org.gnome.settings-daemon.plugins.media-keys rotate-video-lock-static "['XF86RotationLockToggle']"
 KB=/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/handy/
 list=$(gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings)
@@ -400,8 +296,7 @@ gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:$KB
 git config --global user.name "Sorawit Kongnurat"
 git config --global user.email work@mapringg.com
 
-# mise is inert until it's hooked into the shell. Appended once, in the stock
-# .bashrc's own comment style, so re-runs don't stack lines onto the end of it.
+# Appended once, in the stock .bashrc's comment style
 if ! grep -qF 'mise activate bash' ~/.bashrc; then
   cat >> ~/.bashrc <<'BASHRC'
 
@@ -411,18 +306,11 @@ BASHRC
 fi
 
 # --- zapp (Voyager flashing) --------------------------------------------------
-# ZSA's CLI flasher, so firmware goes on from the terminal instead of Chrome's
-# WebUSB page: `zapp flash <Oryx URL or .bin>`, or `zapp update` for the newest
-# Oryx revision of the layout already on the board. Not in the archive; mise
-# pulls the prebuilt binary from GitHub releases and updates it with `mise up`.
+# `zapp flash <Oryx URL or .bin>`, or `zapp update`
 mise use -g github:zsa/zapp
 
-# Without a rule the keyboard's USB nodes are root-only, and flashing fails
-# with a permissions error. ZSA's rules file makes them world-writable for
-# every ZSA board; this is the two lines the Voyager needs — the keyboard
-# itself, and the STM32 bootloader it reboots into to be flashed — with
-# uaccess instead, which grants only whoever is logged in at the desk. It has
-# to sort before 73-seat-late.rules, which is what applies the tag.
+# The Voyager and its STM32 bootloader, with uaccess rather than ZSA's
+# world-writable rules. Must sort before 73-seat-late.rules, which applies it.
 udev_rules=/etc/udev/rules.d/50-zsa.rules
 udev_want='SUBSYSTEM=="usb", ATTR{idVendor}=="3297", TAG+="uaccess"
 SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3297", TAG+="uaccess"
@@ -434,19 +322,13 @@ if [ "$(cat "$udev_rules" 2>/dev/null)" != "$udev_want" ]; then
 fi
 
 # --- Wake-on-LAN --------------------------------------------------------------
-# NetworkManager owns this NIC and re-applies its ethernet settings a couple of
-# seconds into boot, so anything set behind its back — a systemd unit, a udev
-# rule — is silently undone. Setting it on the connection is what sticks, and it
-# also flips the PCI device's power/wakeup, which defaults to `disabled` and is
-# the half that actually breaks Wake-on-LAN.
+# On the NM connection, as NM undoes anything else; it also sets PCI wakeup
 CON=$(nmcli -t -f NAME,DEVICE con show | awk -F: -v d="$NIC" '$2==d{print $1; exit}')
 sudo nmcli con mod "$CON" 802-3-ethernet.wake-on-lan magic
 sudo nmcli con up "$CON" >/dev/null   # brief link bounce
 
 # --- suspend over SSH ---------------------------------------------------------
-# polkit only grants suspend to a session that is physically at the machine, so
-# `ssh ubuntu 'systemctl suspend'` — the whole point of the power design — is
-# denied. Narrow grant: this one action, this one user.
+# polkit only grants suspend to local sessions
 sudo tee /etc/polkit-1/rules.d/50-suspend.rules >/dev/null <<RULES
 polkit.addRule(function(action, subject) {
     if ((action.id == "org.freedesktop.login1.suspend" ||
@@ -458,12 +340,8 @@ polkit.addRule(function(action, subject) {
 RULES
 
 # --- backups ------------------------------------------------------------------
-# Déjà Dup to the external drive: everything in $HOME, daily, 30 days kept.
-# The drive is ext4 labelled `Backup`, formatted by hand. The `drive` backend
-# finds it by UUID and mounts it before each run. The `local` backend took a
-# fixed /run/media path, and GNOME only automounts drives plugged in after login,
-# so after every reboot the path was missing and the scheduled backup failed.
-# A fresh ext4 root is root-owned, so mount it once here and chown it.
+# The drive backend mounts by UUID; `local` needed a path that only existed
+# after login. A fresh ext4 root is root-owned, hence the chown.
 mnt=$(findmnt -no TARGET "$BACKUP" | head -1 || true)
 if [[ -z $mnt ]]; then
   udisksctl mount -b "$BACKUP" >/dev/null
@@ -482,20 +360,15 @@ gsettings set org.gnome.DejaDup periodic-period 1
 gsettings set org.gnome.DejaDup delete-after 30
 
 # --- LUKS auto-unlock via TPM -------------------------------------------------
-# Bound to PCR7 (Secure Boot state), so kernel updates don't invalidate it but
-# disabling Secure Boot does. The install passphrase stays as a keyslot, so a
-# failed TPM unlock falls back to typing it rather than locking me out.
+# PCR7: survives kernel updates, not Secure Boot changes. The passphrase stays.
 if ! sudo cryptsetup luksDump "$LUKS" | grep -q systemd-tpm2; then
   sudo systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7 "$LUKS"
 fi
 if ! grep -q tpm2-device /etc/crypttab; then
   sudo sed -i 's/ luks$/ luks,tpm2-device=auto/' /etc/crypttab
 fi
-# Unconditional: dracut's systemd-cryptsetup module pulls in tpm2-tss, which
-# needs the tpm2-tools binaries present at build time.
-# One per kernel in /boot, not --regenerate-all: that walks /usr/lib/modules,
-# where a removed kernel leaves a stub directory behind until it's purged, and
-# dracut fails on it.
+# Always rebuilt: the initramfs needs tpm2-tools. Per kernel in /boot, since
+# --regenerate-all fails on stubs left in /usr/lib/modules.
 for k in /boot/vmlinuz-*; do
   sudo dracut --force --kver "${k#/boot/vmlinuz-}"
 done

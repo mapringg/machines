@@ -66,6 +66,65 @@ it's never reached, but T3 Code won't offer "Open in VS Code" to the MacBook wit
 It is *not* in the installer's Default selection, so `ubuntu.sh` installs and
 configures it. Everything is gsettings, so nothing about it lives in a GUI only.
 
+## Manual steps
+
+What the scripts can't do. Do these first unless marked *after*.
+
+### ubuntu.sh
+
+- **BIOS.** See [Desktop BIOS](#desktop-bios).
+- **Installer.** Default selection, both third-party boxes ticked (the NVIDIA driver is
+  Canonical-signed, so Secure Boot needs no MOK). Erase disk onto the 931GB drive,
+  encrypt with passphrase, hostname `ubuntu`, user `mapring`. Install Windows first,
+  deleting all partitions on both disks, so its boot files stay off this drive.
+- **Backup drive.** Format it ext4, label it `Backup`, and leave it plugged in.
+- ***After.*** Sign in to 1Password, then Tailscale. Restore `~/.ssh`, `~/Work` and the
+  `.env` files. Run `claude` and `codex` once each to sign in, and the first Déjà Dup
+  backup. Reboot for the docker and input groups, then in Handy pick Parakeet V3, turn
+  on launch at login, and set Advanced → Paste Method to Clipboard (Ctrl+Shift+V):
+  ydotool's typing is slow, and terminals only paste with Shift.
+
+### windows.ps1
+
+- **USB.** Rufus, GPT / UEFI. Under Windows User Experience tick only "remove
+  requirement for an online Microsoft account". Don't bypass TPM or Secure Boot.
+- **Installer.** Delete all partitions on both disks, then install to the 1907GB drive.
+  Otherwise the boot files land on the Ubuntu drive and its install wipes them.
+- **OOBE.** Offline account `mapring`, with a password.
+- **Drivers.** AMD chipset from amd.com, not MSI's copy: its power provisioning driver
+  tells the scheduler which cores hold the 3D V-Cache. NVIDIA from nvidia.com, Custom,
+  driver only. Everything else from Windows Update; skip the MSI Driver Utility.
+- **Apps.** 1Password, Tailscale, Steam.
+- **NVIDIA Control Panel.** Change resolution: MSI 3840x2160 @ 240Hz, LG ULTRAGEAR
+  2560x1440 @ 165Hz, both with NVIDIA color settings, RGB, 10 bpc, Full range (HDMI can
+  default to limited, which greys OLED black). G-SYNC on for full screen and windowed,
+  "G-SYNC Compatible", and again with the LG selected. Manage 3D settings → Max Frame
+  Rate 237, so G-SYNC never hits 240Hz and falls back to V-Sync.
+- **Settings → Display.** LG portrait at 100%, left of the MSI as on Ubuntu; MSI 150%
+  and main display. HDR on for the MSI only, then run Windows HDR Calibration with the
+  monitor's DisplayHDR on True Black 400. Match the MSI's brightness to the LG with
+  "SDR content brightness", not the monitor's own.
+
+### macbook.sh
+
+- **Bootstrap.** The repo is private and the Mac has no key yet, so:
+  1. Setup Assistant, sign in to iCloud.
+  2. Safari → 1password.com, install, sign in. Have the Emergency Kit's Secret Key
+     before erasing.
+  3. Safari → tailscale.com, install, sign in.
+  4. `scp ubuntu:Work/mapringg/machines/macbook.sh ~/ && ~/macbook.sh`. Tailscale SSH
+     needs no key.
+
+  brew then adopts Tailscale. 1Password stays out of brew: it updates itself, and
+  macOS App Management blocks brew's `--adopt` on its bundle even under sudo.
+- ***After:* Finder.** ⌘2 for list view, then ⌘J → Date Created and Show Library Folder
+  on, relative dates and Calculate all sizes off → Use as Defaults. Old per-folder
+  views in `.DS_Store` win over it: `find ~ -name .DS_Store -type f -delete`. The
+  `defaults` keys for this are no-ops on macOS 27.
+- ***After:* Handy.** Grant Microphone and Accessibility, pick Parakeet V3, turn on
+  launch at login.
+- ***After:* Log out.** Key repeat only applies to a new session.
+
 ## Desktop BIOS
 
 MSI PRO B650-P WIFI (MS-7D78). Shared by both OSes, so it lives here rather than in
