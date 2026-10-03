@@ -329,6 +329,60 @@ eval "$(mise activate bash)"
 BASHRC
 fi
 
+# --- Android (Expo) -----------------------------------------------------------
+# React Native's Gradle toolchain wants 17; Studio only bundles 21. Phones need
+# no udev rules: systemd's 70-uaccess already tags adb devices.
+sudo apt install -y openjdk-17-jdk
+
+# Google's tarball, not the Snapcrafters snap. Owned by me so Studio's own
+# updater can patch it.
+if [ ! -x /opt/android-studio/bin/studio ]; then
+  url=$(curl -fsSL https://jb.gg/android-studio-releases-list.json | python3 -c '
+import json, sys
+rel = next(i for i in json.load(sys.stdin)["content"]["item"] if i["channel"] == "Release")
+print(next(d["link"] for d in rel["download"] if d["link"].endswith("-linux.tar.gz")))')
+  sudo install -d -o "$USER" -g "$USER" /opt/android-studio
+  curl -fsSL "$url" | tar -xz -C /opt/android-studio --strip-components=1
+fi
+
+# Studio's badge spans 118/128px; shrink it to Chrome's 112/128. Measured on
+# the PNG, applied to the SVG, so it stays sharp at 150%.
+mkdir -p ~/.local/share/icons/hicolor/scalable/apps
+python3 - /opt/android-studio/bin/studio.png /opt/android-studio/bin/studio.svg \
+  ~/.local/share/icons/hicolor/scalable/apps/android-studio.svg <<'PY'
+import re, sys
+from PIL import Image
+png, src, dst = sys.argv[1:]
+im = Image.open(png).convert("RGBA")
+l, _, r, _ = im.getchannel("A").point(lambda a: 255 if a > 128 else 0).getbbox()
+k = 112 / (r - l)
+svg = open(src).read()
+head = re.match(r"<svg[^>]*>", svg).end()
+g = f'<g transform="translate({64 * (1 - k):.3f} {64 * (1 - k):.3f}) scale({k:.5f})">'
+open(dst, "w").write(svg[:head] + g + svg[head:].replace("</svg>", "</g></svg>"))
+PY
+
+# Named for Studio's WM class, or GNOME shows its window as a second icon
+cat > ~/.local/share/applications/jetbrains-studio.desktop <<'DESKTOP'
+[Desktop Entry]
+Type=Application
+Name=Android Studio
+Icon=android-studio
+Exec=/opt/android-studio/bin/studio %f
+Categories=Development;IDE;
+StartupWMClass=jetbrains-studio
+StartupNotify=true
+DESKTOP
+
+if ! grep -qF 'ANDROID_HOME' ~/.bashrc; then
+  cat >> ~/.bashrc <<'BASHRC'
+
+# Android SDK, where Android Studio's setup wizard puts it
+export ANDROID_HOME="$HOME/Android/Sdk"
+export PATH="$PATH:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools"
+BASHRC
+fi
+
 # --- zapp (Voyager flashing) --------------------------------------------------
 # `zapp flash <Oryx URL or .bin>`, or `zapp update`
 mise use -g github:zsa/zapp

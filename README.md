@@ -62,6 +62,12 @@ What the scripts can't do. Do these first unless marked *after*.
   backup. Reboot for the docker and input groups, then in Handy pick Parakeet V3, turn
   on launch at login, and set Advanced → Paste Method to Clipboard (Ctrl+Shift+V):
   ydotool's typing is slow, and terminals only paste with Shift.
+- ***After:* Android.** Open Android Studio once and take the Standard setup, which
+  installs the SDK into `~/Android/Sdk`, accepts its licenses and creates a Medium Phone
+  emulator. Gradle fetches each project's own platform, build-tools and NDK on first
+  build. On every virtual device, Device Manager → edit → Additional settings → Graphics
+  acceleration → Hardware: Automatic fails its GPU check and falls back to software
+  rendering, which lags and trips GNOME's "not responding" dialog.
 
 ### windows.ps1
 
