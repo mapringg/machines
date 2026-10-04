@@ -73,12 +73,16 @@ What the scripts can't do. Do these first unless marked *after*.
   2560x1440 @ 165Hz, both with NVIDIA color settings, RGB, 10 bpc, Full range (HDMI can
   default to limited, which greys OLED black). G-SYNC on for full screen and windowed,
   "G-SYNC Compatible", and again with the LG selected. Manage 3D settings → Max Frame
-  Rate 237, so G-SYNC never hits 240Hz and falls back to V-Sync.
+  Rate 237, so frames never reach 240Hz, where V-Sync takes over and adds lag. Vertical
+  sync On: below the cap it only stops G-SYNC tearing on frame-time spikes. Low Latency
+  Mode On, for games without Reflex.
 - **Settings → Display.** LG portrait at 100%, left of the MSI as on Ubuntu; MSI 150%
   and main display. HDR on for the MSI only, then run Windows HDR Calibration with the
   monitor's DisplayHDR on True Black 400. Match the MSI's brightness to the LG with
   "SDR content brightness", not the monitor's own.
 - ***After.*** Sign in to 1Password, Tailscale, Steam and Discord.
+- ***After:* Each game.** V-Sync off, since the driver handles it. NVIDIA Reflex On
+  where offered; On + Boost only helps when CPU-bound, which 4K rarely is.
 
 ### macbook.sh
 

@@ -39,6 +39,17 @@ if ($taskbar[8] -ne 3) {
 reg add "HKCU\Control Panel\Desktop" /v FontSmoothing /t REG_SZ /d 2 /f
 reg add "HKCU\Control Panel\Desktop" /v FontSmoothingType /t REG_DWORD /d 1 /f
 
+# Optimizations for windowed games on: borderless gets fullscreen's latency.
+# Other Graphics settings share this string, so edit it rather than overwrite.
+$gpuPrefs = "HKCU\Software\Microsoft\DirectX\UserGpuPreferences"
+$directx = (Get-ItemProperty "Registry::$gpuPrefs" -ErrorAction Ignore)
+$directx = $directx.DirectXUserGlobalSettings
+$windowed = "SwapEffectUpgradeEnable=1;"
+if ($directx -notmatch $windowed) {
+    $directx = ($directx -replace "SwapEffectUpgradeEnable=\d;", "") + $windowed
+    reg add $gpuPrefs /v DirectXUserGlobalSettings /t REG_SZ /d $directx /f
+}
+
 # Enhance pointer precision off, to match Ubuntu's flat pointer
 reg add "HKCU\Control Panel\Mouse" /v MouseSpeed /t REG_SZ /d 0 /f
 reg add "HKCU\Control Panel\Mouse" /v MouseThreshold1 /t REG_SZ /d 0 /f
