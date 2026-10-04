@@ -406,8 +406,10 @@ fi
 # --- Wake-on-LAN --------------------------------------------------------------
 # On the NM connection, as NM undoes anything else; it also sets PCI wakeup
 CON=$(nmcli -t -f NAME,DEVICE con show | awk -F: -v d="$NIC" '$2==d{print $1; exit}')
-sudo nmcli con mod "$CON" 802-3-ethernet.wake-on-lan magic
-sudo nmcli con up "$CON" >/dev/null   # brief link bounce
+if [ "$(nmcli -g 802-3-ethernet.wake-on-lan con show "$CON")" != magic ]; then
+  sudo nmcli con mod "$CON" 802-3-ethernet.wake-on-lan magic
+  sudo nmcli con up "$CON" >/dev/null   # brief link bounce
+fi
 
 # --- suspend over SSH ---------------------------------------------------------
 # polkit only grants suspend to local sessions
