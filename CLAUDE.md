@@ -22,3 +22,8 @@ Setup scripts for three machines. README explains the design and holds the manua
 
 - Safe to re-run: check state before changing it.
 - Defaults unless I'd notice the difference within a day.
+
+## README
+
+- Wrap at 88.
+- Say each fact once; link to the section that owns it instead of restating it.
