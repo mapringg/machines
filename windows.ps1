@@ -1,6 +1,9 @@
 # Windows 11 Pro desktop, hostname `windows`. Gaming only.
 # Run as Administrator after the manual steps in README. Safe to re-run.
 
+# --- machine ------------------------------------------------------------------
+if ($env:COMPUTERNAME -ne "windows") { Rename-Computer -NewName windows }
+
 # Fast Startup's hibernation stops the NIC waking on LAN
 powercfg /h off
 
@@ -8,8 +11,7 @@ powercfg /h off
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\TimeZoneInformation" `
     /v RealTimeIsUniversal /t REG_DWORD /d 1 /f
 
-# Per-user from here, so run from mapring's own session. Applies at next sign-in.
-
+# --- per-user: run from mapring's session; applies at next sign-in ------------
 # Dark mode and auto-hidden taskbar, for OLED burn-in. Auto-hide is byte 8 of
 # StuckRects3 (3 hides), which Explorer reads only when it restarts.
 $personalize = "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
@@ -31,5 +33,3 @@ reg add "HKCU\Control Panel\Desktop" /v FontSmoothingType /t REG_DWORD /d 1 /f
 reg add "HKCU\Control Panel\Mouse" /v MouseSpeed /t REG_SZ /d 0 /f
 reg add "HKCU\Control Panel\Mouse" /v MouseThreshold1 /t REG_SZ /d 0 /f
 reg add "HKCU\Control Panel\Mouse" /v MouseThreshold2 /t REG_SZ /d 0 /f
-
-if ($env:COMPUTERNAME -ne "windows") { Rename-Computer -NewName windows }

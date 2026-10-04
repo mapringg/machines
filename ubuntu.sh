@@ -4,7 +4,6 @@
 # removed while it's open.
 set -euo pipefail
 
-NIC=enp12s0
 # By UUID: NVMe order changes across boots, and the wrong path is Windows
 LUKS=/dev/disk/by-uuid/$(awk '$2 ~ /^UUID=/ {sub(/^UUID=/, "", $2); print $2; exit}' /etc/crypttab)
 # Déjà Dup finds the drive by UUID, so it must be plugged in
@@ -44,6 +43,20 @@ if [ ! -f /etc/apt/sources.list.d/github-cli.list ]; then
     | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null
 fi
 
+# Mozilla's deb, not the snap: a confined snap can't run 1Password's browser
+# helper. Pinned so the archive's `firefox` stub can't bring the snap back.
+if [ ! -f /etc/apt/sources.list.d/mozilla.list ]; then
+  sudo install -dm755 /etc/apt/keyrings
+  curl -fsSL https://packages.mozilla.org/apt/repo-signing-key.gpg \
+    | sudo tee /etc/apt/keyrings/packages.mozilla.org.asc >/dev/null
+  echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" \
+    | sudo tee /etc/apt/sources.list.d/mozilla.list >/dev/null
+  printf 'Package: *\nPin: origin packages.mozilla.org\nPin-Priority: 1000\n' \
+    | sudo tee /etc/apt/preferences.d/mozilla >/dev/null
+fi
+if snap list firefox >/dev/null 2>&1; then sudo snap remove --purge firefox; fi
+
+# --- Tailscale and SSH --------------------------------------------------------
 command -v tailscale >/dev/null || curl -fsSL https://tailscale.com/install.sh | sh
 
 # Prints a sign-in URL, so sign in to 1Password first
@@ -67,19 +80,6 @@ if [ -n "${sshd_changed:-}" ]; then
   sudo systemctl daemon-reload
   sudo systemctl restart ssh.socket
 fi
-
-# Mozilla's deb, not the snap: a confined snap can't run 1Password's browser
-# helper. Pinned so the archive's `firefox` stub can't bring the snap back.
-if [ ! -f /etc/apt/sources.list.d/mozilla.list ]; then
-  sudo install -dm755 /etc/apt/keyrings
-  curl -fsSL https://packages.mozilla.org/apt/repo-signing-key.gpg \
-    | sudo tee /etc/apt/keyrings/packages.mozilla.org.asc >/dev/null
-  echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" \
-    | sudo tee /etc/apt/sources.list.d/mozilla.list >/dev/null
-  printf 'Package: *\nPin: origin packages.mozilla.org\nPin-Priority: 1000\n' \
-    | sudo tee /etc/apt/preferences.d/mozilla >/dev/null
-fi
-if snap list firefox >/dev/null 2>&1; then sudo snap remove --purge firefox; fi
 
 # --- packages -----------------------------------------------------------------
 sudo apt update
@@ -138,6 +138,9 @@ im.resize((side, side), Image.LANCZOS).crop((c, c, c + im.width, c + im.width)).
 PY
 done
 
+sudo usermod -aG docker "$USER"   # takes effect at next boot, see Handy below
+
+# --- GNOME --------------------------------------------------------------------
 # Repoint the dash favourite from the removed snap
 gsettings set org.gnome.shell favorite-apps \
   "$(gsettings get org.gnome.shell favorite-apps | sed 's/firefox_firefox.desktop/firefox.desktop/')"
@@ -160,7 +163,6 @@ gnome-extensions disable tiling-assistant@ubuntu.com
 # Ubuntu Dock glitches across mixed scales
 gnome-extensions disable ubuntu-dock@ubuntu.com
 
-# Monitors live in ~/.config/monitors.xml, written by gdctl like Settings does.
 # SDR keeps the MSI's own brightness and sRGB mode; full range stops HDMI from
 # picking limited, which greys OLED black. `gdctl set` replaces the whole
 # layout and blanks the screens, so it only runs on drift. Connectors change, so
@@ -198,8 +200,6 @@ gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
 gsettings set org.gnome.desktop.interface gtk-theme 'Yaru-dark'
 gsettings set org.gnome.desktop.interface icon-theme 'Yaru-dark'
 
-sudo usermod -aG docker "$USER"   # takes effect at next boot, see Handy below
-
 # --- Claude Code --------------------------------------------------------------
 # Self-updating, so not through mise
 command -v claude >/dev/null 2>&1 || curl -fsSL https://claude.ai/install.sh | bash
@@ -212,8 +212,7 @@ command -v claude >/dev/null 2>&1 || curl -fsSL https://claude.ai/install.sh | b
 
 # --- T3 Code ------------------------------------------------------------------
 # User service, so the phone and web apps reach it without a terminal; lingering
-# keeps it up at boot. Update with `t3 update`, which stays on nightly. Back to
-# stable: `t3 update --channel stable --allow-downgrade`.
+# keeps it up at boot. `t3 update` stays on nightly.
 [ -x ~/.local/bin/t3 ] || curl -fsSL https://t3.codes/install.sh | T3CODE_CHANNEL=nightly sh
 sudo loginctl enable-linger "$USER"
 systemctl --user is-enabled t3code.service >/dev/null 2>&1 || ~/.local/bin/t3 service install
@@ -320,7 +319,6 @@ gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:$KB
 git config --global user.name "Sorawit Kongnurat"
 git config --global user.email work@mapringg.com
 
-# Appended once, in the stock .bashrc's comment style
 if ! grep -qF 'mise activate bash' ~/.bashrc; then
   cat >> ~/.bashrc <<'BASHRC'
 
@@ -388,7 +386,6 @@ BASHRC
 fi
 
 # --- zapp (Voyager flashing) --------------------------------------------------
-# `zapp flash <Oryx URL or .bin>`, or `zapp update`
 mise use -g github:zsa/zapp
 
 # The Voyager and its STM32 bootloader, with uaccess rather than ZSA's
@@ -405,6 +402,7 @@ fi
 
 # --- Wake-on-LAN --------------------------------------------------------------
 # On the NM connection, as NM undoes anything else; it also sets PCI wakeup
+NIC=enp12s0
 CON=$(nmcli -t -f NAME,DEVICE con show | awk -F: -v d="$NIC" '$2==d{print $1; exit}')
 if [ "$(nmcli -g 802-3-ethernet.wake-on-lan con show "$CON")" != magic ]; then
   sudo nmcli con mod "$CON" 802-3-ethernet.wake-on-lan magic

@@ -55,8 +55,8 @@ touch ~/.hushlogin   # no "Last login:" banner on every new shell
 
 # --- macOS defaults -----------------------------------------------------------
 # Fast key repeat, and no autocorrect mangling code
-defaults write -g KeyRepeat -int 2
-defaults write -g InitialKeyRepeat -int 15
+defaults write NSGlobalDomain KeyRepeat -int 2
+defaults write NSGlobalDomain InitialKeyRepeat -int 15
 defaults write NSGlobalDomain NSAutomaticCapitalizationEnabled -bool false
 defaults write NSGlobalDomain NSAutomaticQuoteSubstitutionEnabled -bool false
 defaults write NSGlobalDomain NSAutomaticDashSubstitutionEnabled -bool false
