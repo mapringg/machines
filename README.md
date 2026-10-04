@@ -69,7 +69,6 @@ What the scripts can't do. Do these first unless marked *after*.
 - **Drivers.** AMD chipset from amd.com, not MSI's copy: its power provisioning driver
   tells the scheduler which cores hold the 3D V-Cache. NVIDIA from nvidia.com, Custom,
   driver only. Everything else from Windows Update; skip the MSI Driver Utility.
-- **Apps.** 1Password, Tailscale, Steam.
 - **NVIDIA Control Panel.** Change resolution: MSI 3840x2160 @ 240Hz, LG ULTRAGEAR
   2560x1440 @ 165Hz, both with NVIDIA color settings, RGB, 10 bpc, Full range (HDMI can
   default to limited, which greys OLED black). G-SYNC on for full screen and windowed,
@@ -79,6 +78,7 @@ What the scripts can't do. Do these first unless marked *after*.
   and main display. HDR on for the MSI only, then run Windows HDR Calibration with the
   monitor's DisplayHDR on True Black 400. Match the MSI's brightness to the LG with
   "SDR content brightness", not the monitor's own.
+- ***After.*** Sign in to 1Password, Tailscale, Steam and Discord.
 
 ### macbook.sh
 

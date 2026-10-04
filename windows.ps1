@@ -11,6 +11,16 @@ powercfg /h off
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\TimeZoneInformation" `
     /v RealTimeIsUniversal /t REG_DWORD /d 1 /f
 
+# --- apps ---------------------------------------------------------------------
+foreach ($id in "AgileBits.1Password", "Tailscale.Tailscale", "Valve.Steam",
+                "Discord.Discord") {
+    winget list --id $id --exact --accept-source-agreements | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        winget install --id $id --exact --silent `
+            --accept-source-agreements --accept-package-agreements
+    }
+}
+
 # --- per-user: run from mapring's session; applies at next sign-in ------------
 # Dark mode and auto-hidden taskbar, for OLED burn-in. Auto-hide is byte 8 of
 # StuckRects3 (3 hides), which Explorer reads only when it restarts.
