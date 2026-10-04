@@ -1,6 +1,8 @@
 # machines
 
-Setup scripts for my three machines. Run the script on a fresh install and get back to work.
+Setup scripts for my three machines. Run one on a fresh install and get back to work.
+They hold only what I'd miss within a day; everything else stays default, and drift
+is fine.
 
 | Script | Machine |
 |---|---|
@@ -8,17 +10,7 @@ Setup scripts for my three machines. Run the script on a fresh install and get b
 | `ubuntu.sh` | Desktop, 931GB NVMe — all development |
 | `windows.ps1` | Desktop, 1.9TB NVMe — gaming only |
 
-Scripts contain only what I'd notice missing within a day. Everything else stays at
-its default. The machines will drift from these scripts over time; that's fine. The
-goal is a fast path back to working, not a perfect mirror.
-
 ## Architecture
-
-The desktop is one PC with two drives — Ubuntu for work, Windows for gaming on weekends.
-Ubuntu is the default boot entry.
-
-At the desk I work on Ubuntu directly, with the good keyboard, mouse and monitor.
-Away from home I SSH in from the MacBook over Tailscale.
 
 ```
  macbook ──── Tailscale ────┬──── ubuntu    (dev; SSH + tmux)
@@ -26,24 +18,21 @@ Away from home I SSH in from the MacBook over Tailscale.
                             └──── umbrel    (always on; sends the wake packet)
 ```
 
-**Power.** Automatic suspend is off. The desktop sleeps only when told to, and umbrel
-wakes it with a magic packet: it has to come from the LAN, since a magic packet won't
-cross Tailscale. umbrel is an appliance, so the packet uses the python3 it already
-has. Both are Termius snippets on the phone, *Sleep PC* on `ubuntu` and *Wake PC* on
+At the desk I use Ubuntu directly; away, I SSH in from the MacBook. Tailscale SSH means
+no host keys, and tmux means a dropped connection loses nothing. Déjà Dup backs up to a
+USB drive daily, encrypted, keeping 30 days.
+
+**Power.** Automatic suspend is off, so the desktop sleeps only when told to. umbrel
+wakes it because a magic packet can't cross Tailscale, using the python3 it ships with.
+Both are Termius snippets on the phone, *Sleep PC* on `ubuntu` and *Wake PC* on
 `umbrel` (`047c16483772` is enp12s0's MAC):
 
     systemctl suspend
 
     python3 -c 'import socket;s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM);s.setsockopt(socket.SOL_SOCKET,socket.SO_BROADCAST,1);s.sendto(b"\xff"*6+bytes.fromhex("047c16483772")*16,("192.168.1.255",9))'
 
-SSH answers about 15 seconds after the packet. It never needs shutting down: the TPM
-unlocks LUKS, so `sudo reboot` over SSH comes back on its own, and after a power cut
-the BIOS powers it back on.
-
-**Access.** Tailscale SSH, so there are no host keys to manage, and tmux so a dropped
-connection never loses work.
-
-**Backups.** Déjà Dup to an external USB drive, daily, 30 days kept, encrypted.
+SSH answers about 15 seconds after the packet. Reboots and power cuts come back on
+their own; see [Desktop BIOS](#desktop-bios).
 
 ## Manual steps
 
@@ -54,8 +43,7 @@ What the scripts can't do. Do these first unless marked *after*.
 - **BIOS.** See [Desktop BIOS](#desktop-bios).
 - **Installer.** Default selection, both third-party boxes ticked (the NVIDIA driver is
   Canonical-signed, so Secure Boot needs no MOK). Erase disk onto the 931GB drive,
-  encrypt with passphrase, hostname `ubuntu`, user `mapring`. Install Windows first,
-  deleting all partitions on both disks, so its boot files stay off this drive.
+  encrypt with passphrase, hostname `ubuntu`, user `mapring`. Install Windows first.
 - **Backup drive.** Format it ext4, label it `Backup`, and leave it plugged in.
 - ***After.*** Sign in to 1Password, then Tailscale. Restore `~/.ssh`, `~/Work` and the
   `.env` files. Run `claude` and `codex` once each to sign in, and the first Déjà Dup
@@ -66,8 +54,7 @@ What the scripts can't do. Do these first unless marked *after*.
   the paste misses. The in-app shortcut does nothing on Wayland; Super+O is GNOME's.
 - ***After:* Android.** Open Android Studio once and take the Standard setup, which
   installs the SDK into `~/Android/Sdk`, accepts its licenses and creates a Medium Phone
-  emulator. Gradle fetches each project's own platform, build-tools and NDK on first
-  build. On every virtual device, Device Manager → edit → Additional settings → Graphics
+  emulator. On every virtual device, Device Manager → edit → Additional settings → Graphics
   acceleration → Hardware: Automatic fails its GPU check and falls back to software
   rendering, which lags and trips GNOME's "not responding" dialog.
 
@@ -123,18 +110,18 @@ either script. After a CMOS reset, only these differ from defaults:
   with it.
 - **Resume By PCI-E Device → Enabled.** This is the Wake-on-LAN toggle on MSI boards.
 - **Restore after AC Power Loss → Power On.** After a power cut the PC is fully off,
-  not suspended, and a magic packet may not wake it from there. Booting unattended is
-  safe because the TPM unlocks LUKS.
+  not suspended, and a magic packet may not wake it from there.
 - **Boot Option #1 → `ubuntu`.** The Windows install puts its own entry first, and
   this board re-asserts its own priority list over whatever `efibootmgr` sets from
-  Linux — so the OS can't fix this, only the firmware can. Set it in *UEFI Hard Disk
+  Linux. Set it in *UEFI Hard Disk
   Drive BBS Priorities* too; changing only the top-level list silently reverts.
 
 Already correct at default, but worth confirming: Re-Size BAR enabled, Secure Boot on,
 AMD fTPM on, CSM disabled.
 
-The TPM unlock is bound to PCR7 (Secure Boot state), so a BIOS update or toggling
-Secure Boot makes the next boot ask for the passphrase. Only do either at the desk.
+The TPM unlocks LUKS, so unattended boots need no passphrase. It's bound to PCR7
+(Secure Boot state), so a BIOS update or toggling Secure Boot makes the next boot ask
+for it. Only do either at the desk.
 
 **Fan curves.** Both headers set to PWM with Smart Fan Mode on. A CMOS reset wipes
 these, and the machine is in my bedroom.
@@ -159,11 +146,10 @@ low. The CPU curve stays flat through the 7800X3D's 55–70 °C dev-work band.
 - **Nix / nix-darwin** — the largest possible deviation from defaults, and it can't cover
   Windows at all, so I'd need a second mechanism anyway.
 - **Sway or a minimal WM** — would mean writing a WM config from scratch. Stock GNOME is
-  less deviation, which matters more than saving RAM. Resources were never the constraint.
+  less deviation, which matters more than saving RAM.
 - **restic / borg by hand** — Déjà Dup 50 *is* restic underneath, without the wiring.
 - **Headless desktop** — I'm a web developer; I need a browser at the desk. The NVIDIA
   card also idles *higher* headless, so it saves nothing.
 - **Ghostty** — the stock terminals work, and its bundled Nerd Font only mattered for
   `eza`, which left with Omarchy.
-- **Autologin** — not needed. Remote work is terminal-only, and SSH works fine with the
-  machine sitting at a login screen. An un-logged-in desktop costs no RAM.
+- **Autologin** — remote work is terminal-only, and SSH works fine at a login screen.
