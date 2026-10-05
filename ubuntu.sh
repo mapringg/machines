@@ -121,12 +121,10 @@ if ! dpkg -s paper >/dev/null 2>&1; then
   rm /tmp/paper.deb
 fi
 
-# Paper's tile fills ~103/128px; grow it to the same 112/128. The faint shadow
-# around it still fits the canvas.
-for src in /usr/share/icons/hicolor/*/apps/paper-desktop.png; do
-  dir=${src#/usr/share/icons/}; dir=~/.local/share/icons/${dir%/*}
-  mkdir -p "$dir"
-  python3 - "$src" "$dir/paper-desktop.png" <<'PY'
+# Scale a centred tile to the same 112/128. Faint shadows don't count, and
+# the crop pads with transparency when shrinking.
+fit_icon() {
+  python3 - "$1" "$2" <<'PY'
 import sys
 from PIL import Image
 src, dst = sys.argv[1:]
@@ -136,6 +134,13 @@ side = round(im.width * im.width * 112 / 128 / (r - l))
 c = (side - im.width) // 2
 im.resize((side, side), Image.LANCZOS).crop((c, c, c + im.width, c + im.width)).save(dst)
 PY
+}
+
+# Paper's tile fills ~103/128px. Its faint shadow still fits once grown.
+for src in /usr/share/icons/hicolor/*/apps/paper-desktop.png; do
+  dir=${src#/usr/share/icons/}; dir=~/.local/share/icons/${dir%/*}
+  mkdir -p "$dir"
+  fit_icon "$src" "$dir/paper-desktop.png"
 done
 
 sudo usermod -aG docker "$USER"   # takes effect at next boot, see Handy below
@@ -384,6 +389,93 @@ export ANDROID_HOME="$HOME/Android/Sdk"
 export PATH="$PATH:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools"
 BASHRC
 fi
+
+# --- Kubernetes ---------------------------------------------------------------
+mise use -g kubectl k9s
+
+# The deb ships Freelens's apt source, so apt upgrades it from then on
+if ! dpkg -s freelens >/dev/null 2>&1; then
+  tag=$(curl -fsSLo /dev/null -w '%{url_effective}' https://github.com/freelensapp/freelens/releases/latest)
+  ver=${tag##*/v}
+  curl -fsSLo /tmp/freelens.deb "https://github.com/freelensapp/freelens/releases/download/v$ver/Freelens-${ver}-linux-amd64.deb"
+  sudo apt install -y /tmp/freelens.deb
+  rm /tmp/freelens.deb
+fi
+
+# Freelens's ring fills ~120/128px
+for src in /usr/share/icons/hicolor/*/apps/freelens.png; do
+  dir=${src#/usr/share/icons/}; dir=~/.local/share/icons/${dir%/*}
+  mkdir -p "$dir"
+  fit_icon "$src" "$dir/freelens.png"
+done
+
+# --- Studio 3T ----------------------------------------------------------------
+# Not Compass: work's MongoDB is older than Compass supports. There's no latest
+# URL, but any version will do, since it updates itself. Owned by me for that.
+if [ ! -x /opt/studio-3t/Studio-3T ]; then
+  sudo install -d -o "$USER" -g "$USER" /opt/studio-3t
+  curl -fsSL https://download.studio3t.com/studio-3t/linux/2026.13.1/studio-3t-linux-x64.tar.gz \
+    | tar -xz -C /tmp
+  sh /tmp/studio-3t-linux-x64.sh -q -dir /opt/studio-3t
+  rm /tmp/studio-3t-linux-x64.sh
+fi
+
+# Updates replay this file, so with the shortcut off they stop re-adding it.
+# Desktop Icons is off anyway, see GNOME.
+sed -i 's/^createDesktopLinkAction\$Boolean=true$/createDesktopLinkAction$Boolean=false/' \
+  /opt/studio-3t/.install4j/response.varfile
+rm -f ~/Desktop/"Studio 3T.desktop"
+
+# The launcher's icon is a blurry 48px full-bleed square. The Mac one in the
+# jar is the same tile at 1024px with rounded corners, ~103/128 wide.
+mkdir -p ~/.local/share/icons/hicolor/512x512@2/apps
+jar=$(ls -v /opt/studio-3t/data-man-mongodb-ent-*.jar | tail -1)
+unzip -p "$jar" t3/dataman/icons/mac/1024.png >/tmp/studio-3t.png
+fit_icon /tmp/studio-3t.png ~/.local/share/icons/hicolor/512x512@2/apps/studio-3t.png
+rm /tmp/studio-3t.png
+
+# Updates rewrite the launcher and install4j forgets a disabled menu entry, so
+# a path unit reapplies the fixes, writing only on change or it retriggers. The
+# window's class is "Studio 3T", or the dock shows a gear. The last -splash wins
+# and a missing file shows none, hiding Java's half-size, off-centre splash.
+service=$(cat <<'UNIT'
+[Unit]
+Description=Reapply the Studio 3T launcher fixes
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'for f in %h/.local/share/applications/install4j_*-Studio-3T.desktop; do \
+  [ -f "$$f" ] || continue; \
+  t=$$(mktemp); \
+  sed -e "s|^Name=.*|Name=Studio 3T|" -e "s|^Icon=.*|Icon=studio-3t|" \
+    -e "s|^StartupWMClass=.*|StartupWMClass=Studio 3T|" \
+    -e "s|^Exec=.*|Exec=env INSTALL4J_ADD_VM_PARAMS=-splash:/nonexistent /opt/studio-3t/Studio-3T %%U|" \
+    "$$f" >"$$t"; \
+  cmp -s "$$t" "$$f" || cat "$$t" >"$$f"; \
+  rm "$$t"; \
+done'
+UNIT
+)
+path=$(cat <<'UNIT'
+[Unit]
+Description=Watch for Studio 3T's updater rewriting its launcher
+
+[Path]
+PathChanged=%h/.local/share/applications
+
+[Install]
+WantedBy=default.target
+UNIT
+)
+unit=~/.config/systemd/user/studio-3t-launcher
+if [ "$(cat "$unit.service" 2>/dev/null)" != "$service" ] ||
+   [ "$(cat "$unit.path" 2>/dev/null)" != "$path" ]; then
+  printf '%s\n' "$service" >"$unit.service"
+  printf '%s\n' "$path" >"$unit.path"
+  systemctl --user daemon-reload
+fi
+systemctl --user enable --now studio-3t-launcher.path
+systemctl --user start studio-3t-launcher.service
 
 # --- zapp (Voyager flashing) --------------------------------------------------
 mise use -g github:zsa/zapp

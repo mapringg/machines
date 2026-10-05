@@ -45,9 +45,9 @@ What the scripts can't do. Do these first unless marked *after*.
   Canonical-signed, so Secure Boot needs no MOK). Erase disk onto the 931GB drive,
   encrypt with passphrase, hostname `ubuntu`, user `mapring`. Install Windows first.
 - **Backup drive.** Format it ext4, label it `Backup`, and leave it plugged in.
-- ***After.*** Sign in to 1Password, then Tailscale. Restore `~/.ssh`, `~/Work` and the
-  `.env` files. Run `claude` and `codex` once each to sign in, and the first Déjà Dup
-  backup. Reboot for the docker and input groups.
+- ***After.*** Sign in to 1Password, then Tailscale. Restore `~/.ssh`, `~/.kube`,
+  `~/Work` and the `.env` files. Run `claude` and `codex` once each to sign in, and the
+  first Déjà Dup backup. Reboot for the docker and input groups.
 - ***After:* Handy.** Pick Cohere Transcribe, not Parakeet, which mishears a non-native
   accent. Turn on launch at login, and set Advanced → Paste Method to Clipboard
   (Ctrl+Shift+V): ydotool's typing is slow, and terminals only paste with Shift. Leave
