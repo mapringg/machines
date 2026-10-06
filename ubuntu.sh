@@ -8,11 +8,13 @@ if snap list firefox >/dev/null 2>&1 && pgrep -x firefox >/dev/null; then
   echo "Close Firefox first." >&2; exit 1
 fi
 
-if [ ! -f /etc/apt/sources.list.d/1password.list ]; then
+if [ ! -f /etc/apt/sources.list.d/1password.sources ]; then
   curl -sS https://downloads.1password.com/linux/keys/1password.asc \
     | sudo gpg --dearmor -o /usr/share/keyrings/1password-archive-keyring.gpg
-  echo "deb [arch=amd64 signed-by=/usr/share/keyrings/1password-archive-keyring.gpg] https://downloads.1password.com/linux/debian/amd64 stable main" \
-    | sudo tee /etc/apt/sources.list.d/1password.list >/dev/null
+  printf '%s\n' 'Types: deb' 'URIs: https://downloads.1password.com/linux/debian/amd64' \
+    'Suites: stable' 'Components: main' 'Architectures: amd64' \
+    'Signed-By: /usr/share/keyrings/1password-archive-keyring.gpg' \
+    | sudo tee /etc/apt/sources.list.d/1password.sources >/dev/null
 fi
 
 if [ ! -f /etc/apt/sources.list.d/mise.list ]; then
@@ -23,12 +25,13 @@ if [ ! -f /etc/apt/sources.list.d/mise.list ]; then
     | sudo tee /etc/apt/sources.list.d/mise.list >/dev/null
 fi
 
-if [ ! -f /etc/apt/sources.list.d/vscode.list ]; then
-  sudo install -dm755 /etc/apt/keyrings
+if [ ! -f /etc/apt/sources.list.d/vscode.sources ]; then
   curl -fsSL https://packages.microsoft.com/keys/microsoft.asc \
-    | sudo gpg --dearmor -o /etc/apt/keyrings/microsoft.gpg
-  echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/code stable main" \
-    | sudo tee /etc/apt/sources.list.d/vscode.list >/dev/null
+    | sudo gpg --dearmor -o /usr/share/keyrings/microsoft.gpg
+  printf '%s\n' 'Types: deb' 'URIs: https://packages.microsoft.com/repos/code' \
+    'Suites: stable' 'Components: main' 'Architectures: amd64' \
+    'Signed-By: /usr/share/keyrings/microsoft.gpg' \
+    | sudo tee /etc/apt/sources.list.d/vscode.sources >/dev/null
 fi
 
 if [ ! -f /etc/apt/sources.list.d/github-cli.list ]; then
