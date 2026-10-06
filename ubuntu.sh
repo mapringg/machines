@@ -39,14 +39,12 @@ if [ ! -f /etc/apt/sources.list.d/github-cli.list ]; then
     | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null
 fi
 
-if [ ! -f /etc/apt/sources.list.d/mozilla.list ]; then
+if [ ! -f /etc/apt/sources.list.d/helium.list ]; then
   sudo install -dm755 /etc/apt/keyrings
-  curl -fsSL https://packages.mozilla.org/apt/repo-signing-key.gpg \
-    | sudo tee /etc/apt/keyrings/packages.mozilla.org.asc >/dev/null
-  echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" \
-    | sudo tee /etc/apt/sources.list.d/mozilla.list >/dev/null
-  printf 'Package: *\nPin: origin packages.mozilla.org\nPin-Priority: 1000\n' \
-    | sudo tee /etc/apt/preferences.d/mozilla >/dev/null
+  curl -fsSL https://raw.githubusercontent.com/imputnet/helium-linux/main/pubkey.asc \
+    | sudo gpg --dearmor -o /etc/apt/keyrings/helium.gpg
+  echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/helium.gpg] https://pkg.helium.computer/deb stable main" \
+    | sudo tee /etc/apt/sources.list.d/helium.list >/dev/null
 fi
 if snap list firefox >/dev/null 2>&1; then sudo snap remove --purge firefox; fi
 
@@ -72,30 +70,7 @@ fi
 sudo apt update
 sudo apt upgrade -y
 sudo apt install -y git tmux lazygit deja-dup docker.io tpm2-tools \
-                    1password mise code gh python3-pil
-
-sudo apt install -y --allow-downgrades firefox
-
-if ! dpkg -s google-chrome-stable >/dev/null 2>&1; then
-  curl -fsSLo /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-  sudo apt install -y /tmp/chrome.deb
-  rm /tmp/chrome.deb
-fi
-
-for src in /opt/google/chrome/product_logo_*.png; do
-  n=${src##*_}; n=${n%.png}
-  mkdir -p ~/.local/share/icons/hicolor/${n}x${n}/apps
-  python3 - "$src" ~/.local/share/icons/hicolor/${n}x${n}/apps/google-chrome.png <<'PY'
-import sys
-from PIL import Image
-src, dst = sys.argv[1:]
-im = Image.open(src).convert("RGBA")
-side = round(im.width * 112 / 128)
-out = Image.new("RGBA", im.size)
-out.paste(im.resize((side, side), Image.LANCZOS), ((im.width - side) // 2,) * 2)
-out.save(dst)
-PY
-done
+                    1password mise code gh python3-pil helium-bin
 
 if ! dpkg -s paper >/dev/null 2>&1; then
   curl -fsSLo /tmp/paper.deb https://download.paper.design/linux/deb
@@ -122,10 +97,18 @@ for src in /usr/share/icons/hicolor/*/apps/paper-desktop.png; do
   fit_icon "$src" "$dir/paper-desktop.png"
 done
 
+for src in /usr/share/icons/hicolor/*/apps/helium.png; do
+  dir=${src#/usr/share/icons/}; dir=~/.local/share/icons/${dir%/*}
+  mkdir -p "$dir"
+  fit_icon "$src" "$dir/helium.png"
+done
+
 sudo usermod -aG docker "$USER"
 
 gsettings set org.gnome.shell favorite-apps \
-  "$(gsettings get org.gnome.shell favorite-apps | sed 's/firefox_firefox.desktop/firefox.desktop/')"
+  "$(gsettings get org.gnome.shell favorite-apps | sed 's/firefox_firefox.desktop/helium.desktop/')"
+[ "$(xdg-settings get default-web-browser)" = helium.desktop ] ||
+  xdg-settings set default-web-browser helium.desktop
 
 gsettings set org.gnome.shell app-picker-layout "[]"
 
