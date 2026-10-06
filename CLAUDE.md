@@ -6,17 +6,13 @@ Setup scripts for three machines. README explains the design and holds the manua
 
 - Imperative subject, capitalized, no trailing period, no `file:` prefix.
 - Aim for 50 characters; never over 72, where GitHub truncates.
-- Subject only, by default. Add a body, wrapped at 72, only when the reason is neither
-  obvious nor in a code comment.
+- Subject only, by default. Add a body, wrapped at 72, when the reason isn't obvious.
 
 ## Comments
 
-- Comment only what the code can't say: a trap, a non-obvious reason, where a number
-  comes from. One or two lines, wrapped at 80.
-- Keep the comments that stop a "simplification" from breaking things.
-- Don't narrate what the next line does, or repeat what the commit body explains.
-- Manual steps go in README, not script headers.
-- Sections are `# --- name ---`, padded with dashes to 80 columns.
+- None, apart from the shebang and `#Requires`.
+- A reason goes in a name, a check that fails loudly, or the commit body.
+- Before changing a line that looks odd, read why with `git log -L`.
 
 ## Scripts
 

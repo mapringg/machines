@@ -1,16 +1,13 @@
 #!/usr/bin/env bash
-# Ubuntu 26.04 desktop, hostname `ubuntu`. Safe to re-run.
-# Do the manual steps in README first, and close Firefox: the snap can't be
-# removed while it's open.
 set -euo pipefail
 
-# By UUID: NVMe order changes across boots, and the wrong path is Windows
 LUKS=/dev/disk/by-uuid/$(awk '$2 ~ /^UUID=/ {sub(/^UUID=/, "", $2); print $2; exit}' /etc/crypttab)
-# Déjà Dup finds the drive by UUID, so it must be plugged in
 BACKUP=/dev/disk/by-label/Backup
 [[ -e $BACKUP ]] || { echo "Plug in the Backup drive first." >&2; exit 1; }
+if snap list firefox >/dev/null 2>&1 && pgrep -x firefox >/dev/null; then
+  echo "Close Firefox first." >&2; exit 1
+fi
 
-# --- third-party repositories -------------------------------------------------
 if [ ! -f /etc/apt/sources.list.d/1password.list ]; then
   curl -sS https://downloads.1password.com/linux/keys/1password.asc \
     | sudo gpg --dearmor -o /usr/share/keyrings/1password-archive-keyring.gpg
@@ -34,7 +31,6 @@ if [ ! -f /etc/apt/sources.list.d/vscode.list ]; then
     | sudo tee /etc/apt/sources.list.d/vscode.list >/dev/null
 fi
 
-# The archive's gh lags behind. GitHub's key is already binary, so no dearmor
 if [ ! -f /etc/apt/sources.list.d/github-cli.list ]; then
   sudo install -dm755 /etc/apt/keyrings
   curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
@@ -43,8 +39,6 @@ if [ ! -f /etc/apt/sources.list.d/github-cli.list ]; then
     | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null
 fi
 
-# Mozilla's deb, not the snap: a confined snap can't run 1Password's browser
-# helper. Pinned so the archive's `firefox` stub can't bring the snap back.
 if [ ! -f /etc/apt/sources.list.d/mozilla.list ]; then
   sudo install -dm755 /etc/apt/keyrings
   curl -fsSL https://packages.mozilla.org/apt/repo-signing-key.gpg \
@@ -56,18 +50,12 @@ if [ ! -f /etc/apt/sources.list.d/mozilla.list ]; then
 fi
 if snap list firefox >/dev/null 2>&1; then sudo snap remove --purge firefox; fi
 
-# --- Tailscale and SSH --------------------------------------------------------
 command -v tailscale >/dev/null || curl -fsSL https://tailscale.com/install.sh | sh
 
-# Prints a sign-in URL, so sign in to 1Password first
 tailscale status >/dev/null 2>&1 || sudo tailscale up --ssh
 
-# Lets `t3 pair --tailscale` run `tailscale serve` without root
 sudo tailscale set --operator="$USER"
 
-# Loopback-only sshd: T3 Code offers "Open in VS Code" only if :22 listens
-# locally. Config first, so it never listens elsewhere; ssh.socket reads it on
-# daemon-reload.
 sshd_conf=/etc/ssh/sshd_config.d/10-loopback.conf
 sshd_want=$'ListenAddress 127.0.0.1\nListenAddress ::1\nPasswordAuthentication no\nKbdInteractiveAuthentication no'
 if [ "$(cat "$sshd_conf" 2>/dev/null)" != "$sshd_want" ]; then
@@ -81,24 +69,19 @@ if [ -n "${sshd_changed:-}" ]; then
   sudo systemctl restart ssh.socket
 fi
 
-# --- packages -----------------------------------------------------------------
 sudo apt update
 sudo apt upgrade -y
 sudo apt install -y git tmux lazygit deja-dup docker.io tpm2-tools \
                     1password mise code gh python3-pil
 
-# The stub carries an epoch, so apt sees Mozilla's real firefox as older
 sudo apt install -y --allow-downgrades firefox
 
-# For the verify skill. Not the Chromium snap: it can't write to ~/.cache
 if ! dpkg -s google-chrome-stable >/dev/null 2>&1; then
   curl -fsSLo /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
   sudo apt install -y /tmp/chrome.deb
   rm /tmp/chrome.deb
 fi
 
-# Shrink Chrome's dock icon to Firefox's 112/128px. The user icon theme wins
-# over /usr/share, so Chrome updates leave it alone.
 for src in /opt/google/chrome/product_logo_*.png; do
   n=${src##*_}; n=${n%.png}
   mkdir -p ~/.local/share/icons/hicolor/${n}x${n}/apps
@@ -114,15 +97,12 @@ out.save(dst)
 PY
 done
 
-# Its postinst adds Paper's apt repo, so apt upgrades it from then on
 if ! dpkg -s paper >/dev/null 2>&1; then
   curl -fsSLo /tmp/paper.deb https://download.paper.design/linux/deb
   sudo apt install -y /tmp/paper.deb
   rm /tmp/paper.deb
 fi
 
-# Scale a centred tile to the same 112/128. Faint shadows don't count, and
-# the crop pads with transparency when shrinking.
 fit_icon() {
   python3 - "$1" "$2" <<'PY'
 import sys
@@ -136,43 +116,27 @@ im.resize((side, side), Image.LANCZOS).crop((c, c, c + im.width, c + im.width)).
 PY
 }
 
-# Paper's tile fills ~103/128px. Its faint shadow still fits once grown.
 for src in /usr/share/icons/hicolor/*/apps/paper-desktop.png; do
   dir=${src#/usr/share/icons/}; dir=~/.local/share/icons/${dir%/*}
   mkdir -p "$dir"
   fit_icon "$src" "$dir/paper-desktop.png"
 done
 
-sudo usermod -aG docker "$USER"   # takes effect at next boot, see Handy below
+sudo usermod -aG docker "$USER"
 
-# --- GNOME --------------------------------------------------------------------
-# Repoint the dash favourite from the removed snap
 gsettings set org.gnome.shell favorite-apps \
   "$(gsettings get org.gnome.shell favorite-apps | sed 's/firefox_firefox.desktop/firefox.desktop/')"
 
-# Clearing the saved layout makes the app grid sort alphabetically
 gsettings set org.gnome.shell app-picker-layout "[]"
 
-# Flat, like Windows. Speed scales by 1 + speed, so -0.33 undoes GNOME's
-# logical-pixel 1.5× at 150%.
 gsettings set org.gnome.desktop.peripherals.mouse accel-profile 'flat'
 gsettings set org.gnome.desktop.peripherals.mouse speed -0.33
 
-# Ubuntu enables these per session mode, so disable rather than uninstall.
-# Desktop Icons hitch clicks on the background.
 gnome-extensions disable ding@rastersoft.com
-
-# Tiling Assistant hijacks Super+arrows; stock GNOME already snaps
 gnome-extensions disable tiling-assistant@ubuntu.com
-
-# Ubuntu Dock glitches across mixed scales
 gnome-extensions disable ubuntu-dock@ubuntu.com
 
-# SDR keeps the MSI's own brightness and sRGB mode; full range stops HDMI from
-# picking limited, which greys OLED black. `gdctl set` replaces the whole
-# layout and blanks the screens, so it only runs on drift. Connectors change, so
-# they're looked up, and the LG is left out when unplugged.
-layout() {   # one sorted line per monitor: mode, colour, range, then placement
+layout() {
   gdctl show --verbose | sed 's/[│├└─]//g; s/^ *//' | awk '
     /^Logical monitors/ { logical = 1 }
     !logical && /^Monitor / { mon = $2 }
@@ -186,7 +150,7 @@ msi=$(gdctl show | awk '/Monitor .*Microstep/ {print $2; exit}')
 lg=$(gdctl show | awk '/Monitor .*LG Electronics/ {print $2; exit}')
 msi_mode=(--monitor "$msi" --mode 3840x2160@239.990 --color-mode default --rgb-range full)
 lg_mode=(--monitor "$lg" --mode 2560x1440@164.958 --color-mode default --rgb-range full)
-if [[ $lg ]]; then   # 2560 tall portrait, 1440 tall MSI at 150%: (2560 − 1440) / 2
+if [[ $lg ]]; then
   args=(--logical-monitor --scale 1 --transform 90 "${lg_mode[@]}"
         --logical-monitor --primary --scale 1.5 --x 1440 --y 560 "${msi_mode[@]}")
   want=$(printf '%s\n' "$lg 2560x1440@164.958 default full (0, 0) 1.0 90 no" \
@@ -197,33 +161,21 @@ else
 fi
 [[ $(layout) == "$want" ]] || gdctl set --persistent "${args[@]}"
 
-# QD-OLED subpixels aren't RGB stripes, so subpixel smoothing fringes
 gsettings set org.gnome.desktop.interface font-antialiasing 'grayscale'
 
-# Dark style for OLED burn-in; the themes match Settings → Appearance
 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
 gsettings set org.gnome.desktop.interface gtk-theme 'Yaru-dark'
 gsettings set org.gnome.desktop.interface icon-theme 'Yaru-dark'
 
-# --- Claude Code --------------------------------------------------------------
-# Self-updating, so not through mise
 command -v claude >/dev/null 2>&1 || curl -fsSL https://claude.ai/install.sh | bash
 
-# --- Codex --------------------------------------------------------------------
-# By file: ~/.local/bin isn't on PATH on a first run. PATH is passed so the
-# installer doesn't append its own to ~/.bashrc.
 [ -x ~/.local/bin/codex ] || curl -fsSL https://chatgpt.com/codex/install.sh \
   | PATH="$HOME/.local/bin:$PATH" CODEX_NON_INTERACTIVE=1 sh
 
-# --- T3 Code ------------------------------------------------------------------
-# User service, so the phone and web apps reach it without a terminal; lingering
-# keeps it up at boot. `t3 update` stays on nightly.
 [ -x ~/.local/bin/t3 ] || curl -fsSL https://t3.codes/install.sh | T3CODE_CHANNEL=nightly sh
 sudo loginctl enable-linger "$USER"
 systemctl --user is-enabled t3code.service >/dev/null 2>&1 || ~/.local/bin/t3 service install
 
-# Started at boot, the service lacks GNOME's display variables, so `code` can't
-# open. wayland-0 is fixed; a drop-in survives `t3 service install`.
 dropin=~/.config/systemd/user/t3code.service.d/display.conf
 want=$'[Service]\nEnvironment=WAYLAND_DISPLAY=wayland-0 XDG_SESSION_TYPE=wayland'
 if [ "$(cat "$dropin" 2>/dev/null)" != "$want" ]; then
@@ -232,7 +184,6 @@ if [ "$(cat "$dropin" 2>/dev/null)" != "$want" ]; then
   t3_changed=1
 fi
 
-# Local DNS answers PostHog with ::, and failed flushes log ~10MB a day
 dropin=~/.config/systemd/user/t3code.service.d/telemetry.conf
 want=$'[Service]\nEnvironment=T3CODE_TELEMETRY_ENABLED=false'
 if [ "$(cat "$dropin" 2>/dev/null)" != "$want" ]; then
@@ -244,9 +195,6 @@ if [ -n "${t3_changed:-}" ]; then
   systemctl --user restart t3code.service
 fi
 
-# --- Taildrop -----------------------------------------------------------------
-# Linux has no receiver, so this drains the inbox into ~/Downloads. Rename,
-# since skip leaves a same-named file stuck in the inbox.
 unit=~/.config/systemd/user/taildrop.service
 want="[Unit]
 Description=Receive Taildrop files into ~/Downloads
@@ -265,9 +213,6 @@ if [ "$(cat "$unit" 2>/dev/null)" != "$want" ]; then
 fi
 systemctl --user enable --now taildrop.service
 
-# --- Handy (dictation) --------------------------------------------------------
-# Only a .deb on GitHub, then it self-updates. Tag from the redirect, since the
-# API rate-limits.
 if ! dpkg -s handy >/dev/null 2>&1; then
   tag=$(curl -fsSLo /dev/null -w '%{url_effective}' https://github.com/cjpais/Handy/releases/latest)
   ver=${tag##*/v}
@@ -276,8 +221,6 @@ if ! dpkg -s handy >/dev/null 2>&1; then
   rm /tmp/handy.deb
 fi
 
-# Scale the tray glyphs to 1Password's 227/256px. Diverted, so Handy's updates
-# write the .orig files instead of undoing this.
 for f in handy handy_warning recording transcribing; do
   png=/usr/lib/Handy/resources/$f.png
   [ -n "$(dpkg-divert --list "$png")" ] || sudo dpkg-divert --rename --divert "$png.orig" --add "$png"
@@ -295,19 +238,14 @@ out.save(dst)
 PY
 done
 
-# The 256px icon sits in a folder for 512px ones and renders blurry at 150%,
-# so the launcher points straight at it
 mkdir -p ~/.local/share/applications
 sed 's|^Icon=.*|Icon=/usr/share/icons/hicolor/256x256@2/apps/handy.png|' \
   /usr/share/applications/Handy.desktop > ~/.local/share/applications/Handy.desktop
 
-# Handy pastes through ydotool; wtype fails on GNOME. /dev/uinput needs the
-# input group, which applies only after a reboot: lingering keeps the session.
 sudo apt install -y ydotool
 sudo usermod -aG input "$USER"
 systemctl --user enable ydotool.service
 
-# Wayland apps can't grab global hotkeys. Super+O is rotation lock by default
 gsettings set org.gnome.settings-daemon.plugins.media-keys rotate-video-lock-static "['XF86RotationLockToggle']"
 KB=/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/handy/
 list=$(gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings)
@@ -320,7 +258,6 @@ gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:$KB
 gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:$KB command 'handy --toggle-transcription'
 gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:$KB binding '<Super>o'
 
-# --- git and mise -------------------------------------------------------------
 git config --global user.name "Sorawit Kongnurat"
 git config --global user.email work@mapringg.com
 
@@ -332,13 +269,8 @@ eval "$(mise activate bash)"
 BASHRC
 fi
 
-# --- Android (Expo) -----------------------------------------------------------
-# React Native's Gradle toolchain wants 17; Studio only bundles 21. Phones need
-# no udev rules: systemd's 70-uaccess already tags adb devices.
 sudo apt install -y openjdk-17-jdk
 
-# Google's tarball, not the Snapcrafters snap. Owned by me so Studio's own
-# updater can patch it.
 if [ ! -x /opt/android-studio/bin/studio ]; then
   url=$(curl -fsSL https://jb.gg/android-studio-releases-list.json | python3 -c '
 import json, sys
@@ -348,8 +280,6 @@ print(next(d["link"] for d in rel["download"] if d["link"].endswith("-linux.tar.
   curl -fsSL "$url" | tar -xz -C /opt/android-studio --strip-components=1
 fi
 
-# Studio's badge spans 118/128px; shrink it to Chrome's 112/128. Measured on
-# the PNG, applied to the SVG, so it stays sharp at 150%.
 mkdir -p ~/.local/share/icons/hicolor/scalable/apps
 python3 - /opt/android-studio/bin/studio.png /opt/android-studio/bin/studio.svg \
   ~/.local/share/icons/hicolor/scalable/apps/android-studio.svg <<'PY'
@@ -365,7 +295,6 @@ g = f'<g transform="translate({64 * (1 - k):.3f} {64 * (1 - k):.3f}) scale({k:.5
 open(dst, "w").write(svg[:head] + g + svg[head:].replace("</svg>", "</g></svg>"))
 PY
 
-# Named for Studio's WM class, or GNOME shows its window as a second icon
 cat > ~/.local/share/applications/jetbrains-studio.desktop <<'DESKTOP'
 [Desktop Entry]
 Type=Application
@@ -377,8 +306,6 @@ StartupWMClass=jetbrains-studio
 StartupNotify=true
 DESKTOP
 
-# Emulator's bundled Qt drops _NET_WM_PING, so any timeout fires. Remove once
-# the emulator ships the fix: https://issuetracker.google.com/issues/563833202
 gsettings set org.gnome.mutter check-alive-timeout 0
 
 if ! grep -qF 'ANDROID_HOME' ~/.bashrc; then
@@ -390,10 +317,8 @@ export PATH="$PATH:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools"
 BASHRC
 fi
 
-# --- Kubernetes ---------------------------------------------------------------
 mise use -g kubectl k9s
 
-# The deb ships Freelens's apt source, so apt upgrades it from then on
 if ! dpkg -s freelens >/dev/null 2>&1; then
   tag=$(curl -fsSLo /dev/null -w '%{url_effective}' https://github.com/freelensapp/freelens/releases/latest)
   ver=${tag##*/v}
@@ -402,16 +327,12 @@ if ! dpkg -s freelens >/dev/null 2>&1; then
   rm /tmp/freelens.deb
 fi
 
-# Freelens's ring fills ~120/128px
 for src in /usr/share/icons/hicolor/*/apps/freelens.png; do
   dir=${src#/usr/share/icons/}; dir=~/.local/share/icons/${dir%/*}
   mkdir -p "$dir"
   fit_icon "$src" "$dir/freelens.png"
 done
 
-# --- Studio 3T ----------------------------------------------------------------
-# Not Compass: work's MongoDB is older than Compass supports. There's no latest
-# URL, but any version will do, since it updates itself. Owned by me for that.
 if [ ! -x /opt/studio-3t/Studio-3T ]; then
   sudo install -d -o "$USER" -g "$USER" /opt/studio-3t
   curl -fsSL https://download.studio3t.com/studio-3t/linux/2026.13.1/studio-3t-linux-x64.tar.gz \
@@ -420,24 +341,16 @@ if [ ! -x /opt/studio-3t/Studio-3T ]; then
   rm /tmp/studio-3t-linux-x64.sh
 fi
 
-# Updates replay this file, so with the shortcut off they stop re-adding it.
-# Desktop Icons is off anyway, see GNOME.
 sed -i 's/^createDesktopLinkAction\$Boolean=true$/createDesktopLinkAction$Boolean=false/' \
   /opt/studio-3t/.install4j/response.varfile
 rm -f ~/Desktop/"Studio 3T.desktop"
 
-# The launcher's icon is a blurry 48px full-bleed square. The Mac one in the
-# jar is the same tile at 1024px with rounded corners, ~103/128 wide.
 mkdir -p ~/.local/share/icons/hicolor/512x512@2/apps
 jar=$(ls -v /opt/studio-3t/data-man-mongodb-ent-*.jar | tail -1)
 unzip -p "$jar" t3/dataman/icons/mac/1024.png >/tmp/studio-3t.png
 fit_icon /tmp/studio-3t.png ~/.local/share/icons/hicolor/512x512@2/apps/studio-3t.png
 rm /tmp/studio-3t.png
 
-# Updates rewrite the launcher and install4j forgets a disabled menu entry, so
-# a path unit reapplies the fixes, writing only on change or it retriggers. The
-# window's class is "Studio 3T", or the dock shows a gear. The last -splash wins
-# and a missing file shows none, hiding Java's half-size, off-centre splash.
 service=$(cat <<'UNIT'
 [Unit]
 Description=Reapply the Studio 3T launcher fixes
@@ -477,11 +390,8 @@ fi
 systemctl --user enable --now studio-3t-launcher.path
 systemctl --user start studio-3t-launcher.service
 
-# --- zapp (Voyager flashing) --------------------------------------------------
 mise use -g github:zsa/zapp
 
-# The Voyager and its STM32 bootloader, with uaccess rather than ZSA's
-# world-writable rules. Must sort before 73-seat-late.rules, which applies it.
 udev_rules=/etc/udev/rules.d/50-zsa.rules
 udev_want='SUBSYSTEM=="usb", ATTR{idVendor}=="3297", TAG+="uaccess"
 SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3297", TAG+="uaccess"
@@ -492,17 +402,13 @@ if [ "$(cat "$udev_rules" 2>/dev/null)" != "$udev_want" ]; then
   sudo udevadm trigger
 fi
 
-# --- Wake-on-LAN --------------------------------------------------------------
-# On the NM connection, as NM undoes anything else; it also sets PCI wakeup
 NIC=enp12s0
 CON=$(nmcli -t -f NAME,DEVICE con show | awk -F: -v d="$NIC" '$2==d{print $1; exit}')
 if [ "$(nmcli -g 802-3-ethernet.wake-on-lan con show "$CON")" != magic ]; then
   sudo nmcli con mod "$CON" 802-3-ethernet.wake-on-lan magic
-  sudo nmcli con up "$CON" >/dev/null   # brief link bounce
+  sudo nmcli con up "$CON" >/dev/null
 fi
 
-# --- suspend over SSH ---------------------------------------------------------
-# polkit only grants suspend to local sessions
 sudo tee /etc/polkit-1/rules.d/50-suspend.rules >/dev/null <<RULES
 polkit.addRule(function(action, subject) {
     if ((action.id == "org.freedesktop.login1.suspend" ||
@@ -513,9 +419,6 @@ polkit.addRule(function(action, subject) {
 });
 RULES
 
-# --- backups ------------------------------------------------------------------
-# The drive backend mounts by UUID; `local` needed a path that only existed
-# after login. A fresh ext4 root is root-owned, hence the chown.
 mnt=$(findmnt -no TARGET "$BACKUP" | head -1 || true)
 if [[ -z $mnt ]]; then
   udisksctl mount -b "$BACKUP" >/dev/null
@@ -533,16 +436,12 @@ gsettings set org.gnome.DejaDup periodic true
 gsettings set org.gnome.DejaDup periodic-period 1
 gsettings set org.gnome.DejaDup delete-after 30
 
-# --- LUKS auto-unlock via TPM -------------------------------------------------
-# PCR7: survives kernel updates, not Secure Boot changes. The passphrase stays.
 if ! sudo cryptsetup luksDump "$LUKS" | grep -q systemd-tpm2; then
   sudo systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7 "$LUKS"
 fi
 if ! grep -q tpm2-device /etc/crypttab; then
   sudo sed -i 's/ luks$/ luks,tpm2-device=auto/' /etc/crypttab
 fi
-# Always rebuilt: the initramfs needs tpm2-tools. Per kernel in /boot, since
-# --regenerate-all fails on stubs left in /usr/lib/modules.
 for k in /boot/vmlinuz-*; do
   sudo dracut --force --kver "${k#/boot/vmlinuz-}"
 done
