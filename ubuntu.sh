@@ -56,11 +56,6 @@ done
 
 sudo usermod -aG docker "$USER"
 
-favorites=$(gsettings get org.gnome.shell favorite-apps)
-[[ $favorites == *t3code.desktop* ]] ||
-  favorites=${favorites/"'firefox_firefox.desktop'"/"'firefox_firefox.desktop', 't3code.desktop'"}
-gsettings set org.gnome.shell favorite-apps "$favorites"
-
 gsettings set org.gnome.shell app-picker-layout "[]"
 
 gsettings set org.gnome.desktop.peripherals.mouse accel-profile 'flat'
