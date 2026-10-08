@@ -84,7 +84,8 @@ What the scripts can't do. Do these first unless marked *after*.
   3. Reboot 20 times and cold-start a few, watching for one that doesn't come up.
 - ***After.*** Run `claude` and `codex` once each to sign in, and `gh auth login`.
   Clone the repos and copy the `.env` files from `ubuntu`. Run `t3 pair --tailscale` and
-  paste its URL into T3 Code on `ubuntu`: Settings → Connections → Add environment.
+  paste its URL into T3 Code on `ubuntu` and the MacBook: Settings → Connections → Add
+  environment.
 
 ### windows.ps1
 

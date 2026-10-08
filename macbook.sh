@@ -12,7 +12,7 @@ if [ ! -x /opt/homebrew/bin/brew ]; then
 fi
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
-brew install --cask --adopt tailscale visual-studio-code handy
+brew install --cask --adopt tailscale visual-studio-code handy t3-code@nightly
 
 code --install-extension ms-vscode-remote.remote-ssh
 
@@ -22,6 +22,7 @@ cat > ~/.zshrc <<'ZSHRC'
 export PATH="$HOME/.local/bin:$PATH"
 export LANG=en_US.UTF-8
 export LC_CTYPE=en_US.UTF-8
+export T3CODE_TELEMETRY_ENABLED=false
 ZSHRC
 
 git config --global user.name "Sorawit Kongnurat"
