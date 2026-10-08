@@ -84,9 +84,8 @@ What the scripts can't do. Do these first unless marked *after*.
 - **Installer.** Delete all partitions on both disks, then install to the 1907GB drive.
   Otherwise the boot files land on the Ubuntu drive and its install wipes them.
 - **OOBE.** Offline account `mapring`, with a password.
-- **Drivers.** AMD chipset from amd.com, not MSI's copy: its power provisioning driver
-  tells the scheduler which cores hold the 3D V-Cache. NVIDIA from nvidia.com, Custom,
-  driver only. Everything else from Windows Update; skip the MSI Driver Utility.
+- **Drivers.** NVIDIA from nvidia.com, Custom, driver only. Everything else from Windows
+  Update; skip the MSI Driver Utility.
 - **NVIDIA Control Panel.** Change resolution: MSI 3840x2160 @ 240Hz, LG ULTRAGEAR
   2560x1440 @ 165Hz, both with NVIDIA color settings, RGB, 10 bpc, Full range (HDMI can
   default to limited, which greys OLED black). G-SYNC on for full screen and windowed,
