@@ -1,21 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-LUKS=/dev/disk/by-uuid/$(awk '$2 ~ /^UUID=/ {sub(/^UUID=/, "", $2); print $2; exit}' /etc/crypttab)
 BACKUP=/dev/disk/by-label/Backup
 [[ -e $BACKUP ]] || { echo "Plug in the Backup drive first." >&2; exit 1; }
-if snap list firefox >/dev/null 2>&1 && pgrep -x firefox >/dev/null; then
-  echo "Close Firefox first." >&2; exit 1
-fi
-
-if [ ! -f /etc/apt/sources.list.d/1password.sources ]; then
-  curl -sS https://downloads.1password.com/linux/keys/1password.asc \
-    | sudo gpg --dearmor -o /usr/share/keyrings/1password-archive-keyring.gpg
-  printf '%s\n' 'Types: deb' 'URIs: https://downloads.1password.com/linux/debian/amd64' \
-    'Suites: stable' 'Components: main' 'Architectures: amd64' \
-    'Signed-By: /usr/share/keyrings/1password-archive-keyring.gpg' \
-    | sudo tee /etc/apt/sources.list.d/1password.sources >/dev/null
-fi
 
 if [ ! -f /etc/apt/sources.list.d/mise.list ]; then
   sudo install -dm755 /etc/apt/keyrings
@@ -25,14 +12,7 @@ if [ ! -f /etc/apt/sources.list.d/mise.list ]; then
     | sudo tee /etc/apt/sources.list.d/mise.list >/dev/null
 fi
 
-if [ ! -f /etc/apt/sources.list.d/vscode.sources ]; then
-  curl -fsSL https://packages.microsoft.com/keys/microsoft.asc \
-    | sudo gpg --dearmor -o /usr/share/keyrings/microsoft.gpg
-  printf '%s\n' 'Types: deb' 'URIs: https://packages.microsoft.com/repos/code' \
-    'Suites: stable' 'Components: main' 'Architectures: amd64' \
-    'Signed-By: /usr/share/keyrings/microsoft.gpg' \
-    | sudo tee /etc/apt/sources.list.d/vscode.sources >/dev/null
-fi
+snap list code >/dev/null 2>&1 || sudo snap install code --classic
 
 if [ ! -f /etc/apt/sources.list.d/github-cli.list ]; then
   sudo install -dm755 /etc/apt/keyrings
@@ -42,38 +22,12 @@ if [ ! -f /etc/apt/sources.list.d/github-cli.list ]; then
     | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null
 fi
 
-if [ ! -f /etc/apt/sources.list.d/helium.list ]; then
-  sudo install -dm755 /etc/apt/keyrings
-  curl -fsSL https://raw.githubusercontent.com/imputnet/helium-linux/main/pubkey.asc \
-    | sudo gpg --dearmor -o /etc/apt/keyrings/helium.gpg
-  echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/helium.gpg] https://pkg.helium.computer/deb stable main" \
-    | sudo tee /etc/apt/sources.list.d/helium.list >/dev/null
-fi
-if snap list firefox >/dev/null 2>&1; then sudo snap remove --purge firefox; fi
-
 command -v tailscale >/dev/null || curl -fsSL https://tailscale.com/install.sh | sh
 
 tailscale status >/dev/null 2>&1 || sudo tailscale up --ssh
 
-sudo tailscale set --operator="$USER"
-
-sshd_conf=/etc/ssh/sshd_config.d/10-loopback.conf
-sshd_want=$'ListenAddress 127.0.0.1\nListenAddress ::1\nPasswordAuthentication no\nKbdInteractiveAuthentication no'
-if [ "$(cat "$sshd_conf" 2>/dev/null)" != "$sshd_want" ]; then
-  sudo install -dm755 "${sshd_conf%/*}"
-  printf '%s\n' "$sshd_want" | sudo tee "$sshd_conf" >/dev/null
-  sshd_changed=1
-fi
-dpkg -s openssh-server >/dev/null 2>&1 || { sudo apt install -y openssh-server; sshd_changed=1; }
-if [ -n "${sshd_changed:-}" ]; then
-  sudo systemctl daemon-reload
-  sudo systemctl restart ssh.socket
-fi
-
 sudo apt update
-sudo apt upgrade -y
-sudo apt install -y git tmux lazygit deja-dup docker.io tpm2-tools \
-                    1password mise code gh python3-pil helium-bin
+sudo apt install -y git tmux lazygit deja-dup docker.io mise gh python3-pil
 
 if ! dpkg -s paper >/dev/null 2>&1; then
   curl -fsSLo /tmp/paper.deb https://download.paper.design/linux/deb
@@ -100,54 +54,17 @@ for src in /usr/share/icons/hicolor/*/apps/paper-desktop.png; do
   fit_icon "$src" "$dir/paper-desktop.png"
 done
 
-for src in /usr/share/icons/hicolor/*/apps/helium.png; do
-  dir=${src#/usr/share/icons/}; dir=~/.local/share/icons/${dir%/*}
-  mkdir -p "$dir"
-  fit_icon "$src" "$dir/helium.png"
-done
-
 sudo usermod -aG docker "$USER"
 
-favorites=$(gsettings get org.gnome.shell favorite-apps | sed 's/firefox_firefox.desktop/helium.desktop/')
+favorites=$(gsettings get org.gnome.shell favorite-apps)
 [[ $favorites == *t3code.desktop* ]] ||
-  favorites=${favorites/"'helium.desktop'"/"'helium.desktop', 't3code.desktop'"}
+  favorites=${favorites/"'firefox_firefox.desktop'"/"'firefox_firefox.desktop', 't3code.desktop'"}
 gsettings set org.gnome.shell favorite-apps "$favorites"
-[ "$(xdg-settings get default-web-browser)" = helium.desktop ] ||
-  xdg-settings set default-web-browser helium.desktop
 
 gsettings set org.gnome.shell app-picker-layout "[]"
 
 gsettings set org.gnome.desktop.peripherals.mouse accel-profile 'flat'
 gsettings set org.gnome.desktop.peripherals.mouse speed -0.33
-
-gnome-extensions disable ding@rastersoft.com
-gnome-extensions disable tiling-assistant@ubuntu.com
-gnome-extensions disable ubuntu-dock@ubuntu.com
-
-layout() {
-  gdctl show --verbose | sed 's/[│├└─]//g; s/^ *//' | awk '
-    /^Logical monitors/ { logical = 1 }
-    !logical && /^Monitor / { mon = $2 }
-    !logical && /^[0-9]+x[0-9]+@/ { mode = $1 }
-    !logical && /^is-current ⇒/ { m[mon] = mode }
-    !logical && /^(color-mode|rgb-range) ⇒/ { m[mon] = m[mon] " " $3 }
-    logical && /^(Position|Scale|Transform|Primary):/ { sub(/^[^:]*: /, ""); l = l " " $0 }
-    logical && /^[A-Z]+-[0-9]+ \(/ { print $1, m[$1] l; l = "" }' | sort
-}
-msi=$(gdctl show | awk '/Monitor .*Microstep/ {print $2; exit}')
-lg=$(gdctl show | awk '/Monitor .*LG Electronics/ {print $2; exit}')
-msi_mode=(--monitor "$msi" --mode 3840x2160@239.990 --color-mode default --rgb-range full)
-lg_mode=(--monitor "$lg" --mode 2560x1440@164.958 --color-mode default --rgb-range full)
-if [[ $lg ]]; then
-  args=(--logical-monitor --scale 1 --transform 90 "${lg_mode[@]}"
-        --logical-monitor --primary --scale 1.5 --x 1440 --y 560 "${msi_mode[@]}")
-  want=$(printf '%s\n' "$lg 2560x1440@164.958 default full (0, 0) 1.0 90 no" \
-    "$msi 3840x2160@239.990 default full (1440, 560) 1.5 normal yes" | sort)
-else
-  args=(--logical-monitor --primary --scale 1.5 "${msi_mode[@]}")
-  want="$msi 3840x2160@239.990 default full (0, 0) 1.5 normal yes"
-fi
-[[ -z $msi || $(layout) == "$want" ]] || gdctl set --persistent "${args[@]}"
 
 gsettings set org.gnome.desktop.interface font-antialiasing 'grayscale'
 
@@ -159,13 +76,6 @@ command -v claude >/dev/null 2>&1 || curl -fsSL https://claude.ai/install.sh | b
 
 [ -x ~/.local/bin/codex ] || curl -fsSL https://chatgpt.com/codex/install.sh \
   | PATH="$HOME/.local/bin:$PATH" CODEX_NON_INTERACTIVE=1 sh
-
-if [ -f ~/.config/systemd/user/t3code.service ]; then
-  ~/.local/bin/t3 uninstall --yes
-  rm -rf ~/.config/systemd/user/t3code.service.d
-fi
-[ "$(loginctl show-user "$USER" --property=Linger --value)" = no ] ||
-  sudo loginctl disable-linger "$USER"
 
 if ! dpkg -s t3code >/dev/null 2>&1; then
   releases=$(curl -fsSL 'https://api.github.com/repos/pingdotgg/t3code/releases?per_page=20')
@@ -184,32 +94,6 @@ done
 entry=~/.local/share/applications/t3code.desktop
 want=$(sed 's/^StartupWMClass=.*/StartupWMClass=com.t3tools.T3Code/' /usr/share/applications/t3code.desktop)
 [ "$(cat "$entry" 2>/dev/null)" = "$want" ] || printf '%s\n' "$want" >"$entry"
-
-if ! grep -qF 'T3CODE_TELEMETRY_ENABLED' ~/.bashrc; then
-  cat >> ~/.bashrc <<'BASHRC'
-
-# T3 Code reads this at launch; keeps its usage data off PostHog
-export T3CODE_TELEMETRY_ENABLED=false
-BASHRC
-fi
-
-unit=~/.config/systemd/user/taildrop.service
-want="[Unit]
-Description=Receive Taildrop files into ~/Downloads
-
-[Service]
-ExecStart=/usr/bin/tailscale file get --loop --conflict=rename %h/Downloads
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=default.target"
-if [ "$(cat "$unit" 2>/dev/null)" != "$want" ]; then
-  printf '%s\n' "$want" >"$unit"
-  systemctl --user daemon-reload
-  systemctl --user restart taildrop.service
-fi
-systemctl --user enable --now taildrop.service
 
 if ! dpkg -s handy >/dev/null 2>&1; then
   tag=$(curl -fsSLo /dev/null -w '%{url_effective}' https://github.com/cjpais/Handy/releases/latest)
@@ -400,23 +284,6 @@ if [ "$(cat "$udev_rules" 2>/dev/null)" != "$udev_want" ]; then
   sudo udevadm trigger
 fi
 
-NIC=enp12s0
-CON=$(nmcli -t -f NAME,DEVICE con show | awk -F: -v d="$NIC" '$2==d{print $1; exit}')
-if [ "$(nmcli -g 802-3-ethernet.wake-on-lan con show "$CON")" != magic ]; then
-  sudo nmcli con mod "$CON" 802-3-ethernet.wake-on-lan magic
-  sudo nmcli con up "$CON" >/dev/null
-fi
-
-sudo tee /etc/polkit-1/rules.d/50-suspend.rules >/dev/null <<RULES
-polkit.addRule(function(action, subject) {
-    if ((action.id == "org.freedesktop.login1.suspend" ||
-         action.id == "org.freedesktop.login1.suspend-multiple-sessions") &&
-        subject.user == "$USER") {
-        return polkit.Result.YES;
-    }
-});
-RULES
-
 mnt=$(findmnt -no TARGET "$BACKUP" | head -1 || true)
 if [[ -z $mnt ]]; then
   udisksctl mount -b "$BACKUP" >/dev/null
@@ -433,13 +300,3 @@ gsettings set org.gnome.DejaDup exclude-list "['\$TRASH', '\$DOWNLOAD', '\$HOME/
 gsettings set org.gnome.DejaDup periodic true
 gsettings set org.gnome.DejaDup periodic-period 1
 gsettings set org.gnome.DejaDup delete-after 30
-
-if ! sudo cryptsetup luksDump "$LUKS" | grep -q systemd-tpm2; then
-  sudo systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7 "$LUKS"
-fi
-if ! grep -q tpm2-device /etc/crypttab; then
-  sudo sed -i 's/ luks$/ luks,tpm2-device=auto/' /etc/crypttab
-fi
-for k in /boot/vmlinuz-*; do
-  sudo dracut --force --kver "${k#/boot/vmlinuz-}"
-done
