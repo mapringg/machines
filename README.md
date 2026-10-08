@@ -1,8 +1,8 @@
 # machines
 
-Setup scripts for my four machines. Run one on a fresh install and get back to work.
-They hold only what I'd miss within a day; everything else stays default, and drift
-is fine.
+Setup scripts for my machines. Each takes a clean install to the starting point I want:
+only what I'd miss within a day, with everything else left at its default. After that
+the machines drift, and that's fine.
 
 | Script | Machine |
 |---|---|
@@ -20,143 +20,118 @@ is fine.
 ```
 
 `server` runs T3 Code's threads, so they keep going while the desktop sleeps or plays
-games. It sits wired next to the router, headless.
+games.
 
 At the desk I use Ubuntu directly; away, I SSH in from the MacBook. Tailscale SSH means
-no host keys, and tmux means a dropped connection loses nothing. Déjà Dup backs up to a
-USB drive daily, encrypted, keeping 30 days.
+no host keys, and tmux means a dropped connection loses nothing.
 
-## Manual steps
+## Reinstall
 
-What the scripts can't do. Do these first unless marked *after*.
+Steps in order for each machine; running the script is one of them.
 
 ### ubuntu.sh
 
-- **BIOS.** See [Desktop BIOS](#desktop-bios).
-- **Installer.** Default selection, both third-party boxes ticked (the NVIDIA driver is
-  Canonical-signed, so Secure Boot needs no MOK). Erase disk onto the 931GB drive,
-  encrypt with passphrase, hostname `ubuntu`, user `mapring`. Install Windows first.
-- **Backup drive.** Format it ext4, label it `Backup`, and leave it plugged in.
-- ***After.*** Add the 1Password extension to Firefox, then sign in to Tailscale.
-  Restore `~/.ssh`, `~/.kube`, `~/Work` and the `.env` files. Run `claude` and `codex`
-  once each to sign in, and the first Déjà Dup backup. Reboot for the docker and input
-  groups.
-- ***After:* Displays.** Settings → Displays: MSI 3840x2160 @ 240Hz, 150%, primary; LG
-  2560x1440 @ 165Hz, portrait, 100%, left of the MSI and centred on its height.
-- ***After:* Handy.** Pick Cohere Transcribe, not Parakeet, which mishears a non-native
-  accent. Turn on launch at login, and set Advanced → Paste Method to Clipboard
-  (Ctrl+Shift+V): ydotool's typing is slow, and terminals only paste with Shift. Leave
-  the overlay off: on GNOME it takes focus and the paste misses. The in-app shortcut
-  does nothing on Wayland; Super+O is GNOME's.
-- ***After:* Android.** Open Android Studio once and take the Standard setup, which
-  installs the SDK into `~/Android/Sdk`, accepts its licenses and creates a Medium Phone
-  emulator. On every virtual device, Device Manager → edit → Additional settings → Graphics
-  acceleration → Hardware: Automatic fails its GPU check and falls back to software
-  rendering, which lags and trips GNOME's "not responding" dialog.
+1. **BIOS.** See [Desktop BIOS](#desktop-bios).
+2. **Installer.** Install Windows first. Default selection, both third-party boxes
+   ticked. Erase disk onto the 931GB drive, encrypt with a passphrase, hostname
+   `ubuntu`, user `mapring`.
+3. **Backup drive.** Format it ext4, label it `Backup`, and leave it plugged in.
+4. **Run `ubuntu.sh`.**
+5. **Sign in.** Add the 1Password extension to Firefox, then sign in to Tailscale. Run
+   `claude` and `codex` once each.
+6. **Restore.** Copy back `~/.ssh`, `~/.kube`, `~/Work` and the `.env` files, then run
+   the first Déjà Dup backup. Reboot for the docker and input groups.
+7. **Displays.** Settings → Displays: MSI 3840x2160 @ 240Hz, 150%, primary; LG
+   2560x1440 @ 165Hz, portrait, 100%, left of the MSI and centred on its height.
+8. **Handy.** Pick Cohere Transcribe and turn on launch at login. Advanced → Paste
+   Method → Clipboard (Ctrl+Shift+V). Leave the overlay off. The shortcut is Super+O,
+   not the in-app one.
+9. **Android.** Open Android Studio once and take the Standard setup. On each virtual
+   device, Device Manager → edit → Additional settings → Graphics acceleration →
+   Hardware.
 
 ### server.sh
 
-- **BIOS.** Auto Power ON enabled, so a power cut doesn't leave it off. AMD fTPM on, for
-  the LUKS unlock. If offered, set the iGPU's UMA frame buffer to its minimum: it
-  reserves ~3GB of the 32 by default, and nothing uses it headless.
-- **Installer.** Ubuntu Server 26.04, wired Ethernet. Use the entire disk, LVM encrypted
-  with LUKS, with a passphrase. Hostname `server`, user `mapring`. Leave OpenSSH
-  server unticked: the script installs it bound to loopback.
-- **Burn-in, before anything else.** Within Shopee's 7-day return window, and before
-  tapping "received":
-  1. `curl -fsSL https://tailscale.com/install.sh | sh` and `sudo tailscale up --ssh`,
-     so the private repo is reachable; `server.sh` skips both later. Then
-     `scp ubuntu:Work/mapringg/machines/burnin.sh ~/` and `./burnin.sh` in tmux. It
-     runs 24 hours and writes `~/burnin-*.log`.
-  2. After it, reboot and pick memtest86+ from the GRUB menu (Esc at boot); run it
-     overnight. Secure Boot may refuse it: turn Secure Boot off for the test, and on
-     again before `server.sh`, whose TPM unlock is bound to it.
-  3. Reboot 20 times and cold-start a few, watching for one that doesn't come up.
-- ***After.*** Run `claude` and `codex` once each to sign in, and `gh auth login`.
-  Clone the repos and copy the `.env` files from `ubuntu`. Run `t3 pair --tailscale` and
-  paste its URL into T3 Code on `ubuntu` and the MacBook: Settings → Connections → Add
-  environment.
+1. **BIOS.** Auto Power ON enabled, AMD fTPM on. If offered, set the iGPU's UMA frame
+   buffer to its minimum.
+2. **Installer.** Ubuntu Server 26.04, wired Ethernet. Entire disk, LVM encrypted with
+   LUKS, with a passphrase. Hostname `server`, user `mapring`. Leave OpenSSH server
+   unticked.
+3. **Burn-in.** Within Shopee's 7-day return window, before tapping "received":
+   1. `curl -fsSL https://tailscale.com/install.sh | sh` and `sudo tailscale up --ssh`.
+      Then `scp ubuntu:Work/mapringg/machines/burnin.sh ~/` and run `./burnin.sh` in
+      tmux. It takes 24 hours and writes `~/burnin-*.log`.
+   2. Reboot, pick memtest86+ from the GRUB menu (Esc at boot) and run it overnight. If
+      Secure Boot refuses it, turn Secure Boot off for the test and back on before
+      `server.sh`.
+   3. Reboot 20 times and cold-start a few, watching for one that doesn't come up.
+4. **Run `server.sh`.**
+5. **Sign in.** Run `claude` and `codex` once each, and `gh auth login`. Clone the repos
+   and copy the `.env` files from `ubuntu`.
+6. **Pair.** Run `t3 pair --tailscale` and add its URL in T3 Code on `ubuntu`, the
+   MacBook and the phone: Settings → Connections → Add environment.
 
 ### windows.ps1
 
-- **USB.** Rufus, GPT / UEFI. Under Windows User Experience tick only "remove
-  requirement for an online Microsoft account". Don't bypass TPM or Secure Boot.
-- **Installer.** Delete all partitions on both disks, then install to the 1907GB drive.
-  Otherwise the boot files land on the Ubuntu drive and its install wipes them.
-- **OOBE.** Offline account `mapring`, with a password.
-- **Drivers.** NVIDIA from nvidia.com, Custom, driver only. Everything else from Windows
-  Update; skip the MSI Driver Utility.
-- **NVIDIA Control Panel.** Change resolution: MSI 3840x2160 @ 240Hz, LG ULTRAGEAR
-  2560x1440 @ 165Hz, both with NVIDIA color settings, RGB, 10 bpc, Full range (HDMI can
-  default to limited, which greys OLED black). G-SYNC on for full screen and windowed,
-  "G-SYNC Compatible", and again with the LG selected. Manage 3D settings → Max Frame
-  Rate 237, so frames never reach 240Hz, where V-Sync takes over and adds lag. Vertical
-  sync On: below the cap it only stops G-SYNC tearing on frame-time spikes. Low Latency
-  Mode On, for games without Reflex.
-- **Settings → Display.** LG portrait at 100%, left of the MSI as on Ubuntu; MSI 150%
-  and main display. HDR on for the MSI only, then run Windows HDR Calibration with the
-  monitor's DisplayHDR on True Black 400. Match the MSI's brightness to the LG with
-  "SDR content brightness", not the monitor's own.
-- ***After.*** Sign in to 1Password, Tailscale, Steam and Discord.
-- ***After:* Each game.** V-Sync off, since the driver handles it. NVIDIA Reflex On
-  where offered; On + Boost only helps when CPU-bound, which 4K rarely is.
+1. **USB.** Rufus, GPT / UEFI. Under Windows User Experience tick only "remove
+   requirement for an online Microsoft account".
+2. **Installer.** Delete all partitions on both disks, then install to the 1907GB drive.
+3. **OOBE.** Offline account `mapring`, with a password.
+4. **Drivers.** NVIDIA from nvidia.com, Custom, driver only. Everything else from
+   Windows Update; skip the MSI Driver Utility.
+5. **Run `windows.ps1`** as Administrator.
+6. **Sign in** to 1Password, Tailscale, Steam and Discord.
+7. **NVIDIA Control Panel.**
+   - Change resolution: MSI 3840x2160 @ 240Hz, LG 2560x1440 @ 165Hz.
+   - Set up G-SYNC: on for full screen and windowed, "G-SYNC Compatible", for the MSI
+     and again with the LG selected.
+   - Manage 3D settings: Max Frame Rate 237, Vertical sync On, Low Latency Mode On.
+8. **Settings → Display.** LG portrait at 100%, left of the MSI; MSI 150% and main
+   display. HDR on for the MSI only, then run Windows HDR Calibration with the monitor's
+   DisplayHDR on True Black 400. Match the MSI's brightness to the LG with "SDR content
+   brightness".
+9. **Each game.** V-Sync off, NVIDIA Reflex On.
 
 ### macbook.sh
 
-- **Bootstrap.** The repo is private and the Mac has no key yet, so:
-  1. Setup Assistant, skipping the Apple Account sign-in.
-  2. Safari → 1password.com, install, sign in. Have the Emergency Kit's Secret Key
-     before erasing.
-  3. Safari → tailscale.com, install, sign in.
-  4. `scp ubuntu:Work/mapringg/machines/macbook.sh ~/ && ~/macbook.sh`. Tailscale SSH
-     needs no key.
-
-  1Password and Tailscale stay out of brew: both update themselves, and macOS App
-  Management blocks brew's `--adopt` on 1Password's bundle even under sudo.
-- ***After:* Handy.** Grant Microphone and Accessibility, pick Cohere Transcribe, turn
-  on launch at login.
-- ***After:* Log out.** Key repeat only applies to a new session.
+1. **Setup Assistant**, skipping the Apple Account sign-in.
+2. **1Password.** Safari → 1password.com, install, sign in. Have the Emergency Kit's
+   Secret Key before erasing.
+3. **Tailscale.** Safari → tailscale.com, install, sign in.
+4. **Run `macbook.sh`.** `scp ubuntu:Work/mapringg/machines/macbook.sh ~/`, then
+   `~/macbook.sh`.
+5. **Handy.** Grant Microphone and Accessibility, pick Cohere Transcribe, turn on launch
+   at login.
+6. **Log out**, so key repeat applies.
 
 ## Desktop BIOS
 
-MSI PRO B650-P WIFI (MS-7D78). Shared by both OSes, so it lives here rather than in
-either script. After a CMOS reset, only these differ from defaults:
+MSI PRO B650-P WIFI (MS-7D78), shared by Ubuntu and Windows. After a CMOS reset:
 
-- **EXPO / A-XMP → Profile 1.** A reset drops DDR5 to the JEDEC default of 4800 MT/s
-  and silently loses the 5200 the kit is rated for.
-- **Boot Option #1 → `ubuntu`.** The Windows install puts its own entry first, and
-  this board re-asserts its own priority list over whatever `efibootmgr` sets from
-  Linux. Set it in *UEFI Hard Disk
-  Drive BBS Priorities* too; changing only the top-level list silently reverts.
+- **EXPO / A-XMP → Profile 1**, for the kit's 5200 MT/s instead of 4800.
+- **Boot Option #1 → `ubuntu`**, in *UEFI Hard Disk Drive BBS Priorities* too; changing
+  only the top-level list silently reverts.
+- **Fan curves.** Both headers PWM, Smart Fan Mode on:
 
-Already correct at default, but worth confirming: Re-Size BAR enabled, Secure Boot on,
-AMD fTPM on, CSM disabled.
+  | | CPU_FAN | SYS_FAN |
+  |---|---|---|
+  | | 0 °C → 20% | 40 °C → 30% |
+  | | 45 °C → 35% | 55 °C → 45% |
+  | | 65 °C → 50% | 70 °C → 70% |
+  | | 80 °C → 100% | 85 °C → 100% |
 
-**Fan curves.** Both headers set to PWM with Smart Fan Mode on. A CMOS reset wipes
-these, and the machine is in my bedroom.
-
-| | CPU_FAN | SYS_FAN |
-|---|---|---|
-| | 0 °C → 20% | 40 °C → 30% |
-| | 45 °C → 35% | 55 °C → 45% |
-| | 65 °C → 50% | 70 °C → 70% |
-| | 80 °C → 100% | 85 °C → 100% |
-
-SYS_FAN reads the motherboard sensor, which idles at 35–45 °C, so its curve starts
-low. The CPU curve stays flat through the 7800X3D's 55–70 °C dev-work band.
+Confirm the defaults: Re-Size BAR on, Secure Boot on, AMD fTPM on, CSM off.
 
 ## Considered and rejected
 
 - **WSL2** — fragile auto-start after reboot, and Windows Update reboots at will.
 - **Staying on Omarchy** — heavily customised, and I didn't choose most of it. The point
   is to know what changed and why.
-- **Nix / nix-darwin** — the largest possible deviation from defaults, and it can't cover
-  Windows at all, so I'd need a second mechanism anyway.
+- **Nix / nix-darwin** — the largest possible deviation from defaults, and it can't
+  cover Windows at all, so I'd need a second mechanism anyway.
 - **Sway or a minimal WM** — would mean writing a WM config from scratch. Stock GNOME is
   less deviation, which matters more than saving RAM.
 - **restic / borg by hand** — Déjà Dup 50 *is* restic underneath, without the wiring.
 - **Headless desktop** — I'm a web developer; I need a browser at the desk. The NVIDIA
   card also idles *higher* headless, so it saves nothing.
-- **Ghostty** — the stock terminals work, and its bundled Nerd Font only mattered for
-  `eza`, which left with Omarchy.
 - **Autologin** — remote work is terminal-only, and SSH works fine at a login screen.

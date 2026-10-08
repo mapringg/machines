@@ -1,6 +1,6 @@
 # machines
 
-Setup scripts for three machines. README explains the design and holds the manual steps.
+Setup scripts for my machines. README explains the design and holds the manual steps.
 
 ## Commits
 
