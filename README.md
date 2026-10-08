@@ -1,6 +1,6 @@
 # machines
 
-Setup scripts for my three machines. Run one on a fresh install and get back to work.
+Setup scripts for my four machines. Run one on a fresh install and get back to work.
 They hold only what I'd miss within a day; everything else stays default, and drift
 is fine.
 
@@ -9,14 +9,19 @@ is fine.
 | `macbook.sh` | MacBook Air M3 — thin client, remote work only |
 | `ubuntu.sh` | Desktop, 931GB NVMe — all development |
 | `windows.ps1` | Desktop, 1.9TB NVMe — gaming only |
+| `server.sh` | Getorli GT105 mini PC, 8845HS, 32GB — always on, agents |
 
 ## Architecture
 
 ```
- macbook ──── Tailscale ────┬──── ubuntu    (dev; SSH + tmux)
-   (thin client)            ├──── windows   (gaming; offline most of the week)
+ macbook ──── Tailscale ────┬──── server    (always on; agents, SSH + tmux)
+   (thin client)            ├──── ubuntu    (dev; SSH + tmux)
+                            ├──── windows   (gaming; offline most of the week)
                             └──── umbrel    (always on; sends the wake packet)
 ```
+
+`server` runs T3 Code's threads, so they keep going while the desktop sleeps or plays
+games. It sits wired next to the router, headless.
 
 At the desk I use Ubuntu directly; away, I SSH in from the MacBook. Tailscale SSH means
 no host keys, and tmux means a dropped connection loses nothing. Déjà Dup backs up to a
@@ -58,6 +63,28 @@ What the scripts can't do. Do these first unless marked *after*.
   emulator. On every virtual device, Device Manager → edit → Additional settings → Graphics
   acceleration → Hardware: Automatic fails its GPU check and falls back to software
   rendering, which lags and trips GNOME's "not responding" dialog.
+
+### server.sh
+
+- **BIOS.** Auto Power ON enabled, so a power cut doesn't leave it off. AMD fTPM on, for
+  the LUKS unlock. If offered, set the iGPU's UMA frame buffer to its minimum: it
+  reserves ~3GB of the 32 by default, and nothing uses it headless.
+- **Installer.** Ubuntu Server 26.04, wired Ethernet. Use the entire disk, LVM encrypted
+  with LUKS, with a passphrase. Hostname `server`, user `mapring`. Leave OpenSSH
+  server unticked: the script installs it bound to loopback.
+- **Burn-in, before anything else.** Within Shopee's 7-day return window, and before
+  tapping "received":
+  1. `curl -fsSL https://tailscale.com/install.sh | sh` and `sudo tailscale up --ssh`,
+     so the private repo is reachable; `server.sh` skips both later. Then
+     `scp ubuntu:Work/mapringg/machines/burnin.sh ~/` and `./burnin.sh` in tmux. It
+     runs 24 hours and writes `~/burnin-*.log`.
+  2. After it, reboot and pick memtest86+ from the GRUB menu (Esc at boot); run it
+     overnight. Secure Boot may refuse it: turn Secure Boot off for the test, and on
+     again before `server.sh`, whose TPM unlock is bound to it.
+  3. Reboot 20 times and cold-start a few, watching for one that doesn't come up.
+- ***After.*** Run `claude` and `codex` once each to sign in, and `gh auth login`.
+  Clone the repos and copy the `.env` files from `ubuntu`. Run `t3 pair --tailscale` and
+  paste its URL into T3 Code on `ubuntu`: Settings → Connections → Add environment.
 
 ### windows.ps1
 
@@ -143,8 +170,6 @@ low. The CPU curve stays flat through the 7800X3D's 55–70 °C dev-work band.
 
 ## Considered and rejected
 
-- **Buying a mini PC / home server** — nothing under ~40,000 THB beats the 7800X3D I
-  already own.
 - **WSL2** — fragile auto-start after reboot, and Windows Update reboots at will.
 - **Staying on Omarchy** — heavily customised, and I didn't choose most of it. The point
   is to know what changed and why.
