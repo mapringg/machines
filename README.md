@@ -115,19 +115,15 @@ What the scripts can't do. Do these first unless marked *after*.
 ### macbook.sh
 
 - **Bootstrap.** The repo is private and the Mac has no key yet, so:
-  1. Setup Assistant, sign in to iCloud.
+  1. Setup Assistant, skipping the Apple Account sign-in.
   2. Safari → 1password.com, install, sign in. Have the Emergency Kit's Secret Key
      before erasing.
   3. Safari → tailscale.com, install, sign in.
   4. `scp ubuntu:Work/mapringg/machines/macbook.sh ~/ && ~/macbook.sh`. Tailscale SSH
      needs no key.
 
-  brew then adopts Tailscale. 1Password stays out of brew: it updates itself, and
-  macOS App Management blocks brew's `--adopt` on its bundle even under sudo.
-- ***After:* Finder.** ⌘2 for list view, then ⌘J → Date Created and Show Library Folder
-  on, relative dates and Calculate all sizes off → Use as Defaults. Old per-folder
-  views in `.DS_Store` win over it: `find ~ -name .DS_Store -type f -delete`. The
-  `defaults` keys for this are no-ops on macOS 27.
+  1Password and Tailscale stay out of brew: both update themselves, and macOS App
+  Management blocks brew's `--adopt` on 1Password's bundle even under sudo.
 - ***After:* Handy.** Grant Microphone and Accessibility, pick Cohere Transcribe, turn
   on launch at login.
 - ***After:* Log out.** Key repeat only applies to a new session.
