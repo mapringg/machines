@@ -158,27 +158,27 @@ command -v claude >/dev/null 2>&1 || curl -fsSL https://claude.ai/install.sh | b
 [ -x ~/.local/bin/codex ] || curl -fsSL https://chatgpt.com/codex/install.sh \
   | PATH="$HOME/.local/bin:$PATH" CODEX_NON_INTERACTIVE=1 sh
 
-[ -x ~/.local/bin/t3 ] || curl -fsSL https://t3.codes/install.sh | T3CODE_CHANNEL=nightly sh
-sudo loginctl enable-linger "$USER"
-systemctl --user is-enabled t3code.service >/dev/null 2>&1 || ~/.local/bin/t3 service install
+if [ -f ~/.config/systemd/user/t3code.service ]; then
+  ~/.local/bin/t3 uninstall --yes
+  rm -rf ~/.config/systemd/user/t3code.service.d
+fi
+[ "$(loginctl show-user "$USER" --property=Linger --value)" = no ] ||
+  sudo loginctl disable-linger "$USER"
 
-dropin=~/.config/systemd/user/t3code.service.d/display.conf
-want=$'[Service]\nEnvironment=WAYLAND_DISPLAY=wayland-0 XDG_SESSION_TYPE=wayland'
-if [ "$(cat "$dropin" 2>/dev/null)" != "$want" ]; then
-  mkdir -p "${dropin%/*}"
-  printf '%s\n' "$want" >"$dropin"
-  t3_changed=1
+if ! dpkg -s t3code >/dev/null 2>&1; then
+  releases=$(curl -fsSL 'https://api.github.com/repos/pingdotgg/t3code/releases?per_page=20')
+  nightly_deb=$(grep -m1 -o 'https://[^"]*-nightly\.[^"]*-amd64\.deb' <<<"$releases")
+  curl -fsSLo /tmp/t3code.deb "$nightly_deb"
+  sudo apt install -y /tmp/t3code.deb
+  rm /tmp/t3code.deb
 fi
 
-dropin=~/.config/systemd/user/t3code.service.d/telemetry.conf
-want=$'[Service]\nEnvironment=T3CODE_TELEMETRY_ENABLED=false'
-if [ "$(cat "$dropin" 2>/dev/null)" != "$want" ]; then
-  printf '%s\n' "$want" >"$dropin"
-  t3_changed=1
-fi
-if [ -n "${t3_changed:-}" ]; then
-  systemctl --user daemon-reload
-  systemctl --user restart t3code.service
+if ! grep -qF 'T3CODE_TELEMETRY_ENABLED' ~/.bashrc; then
+  cat >> ~/.bashrc <<'BASHRC'
+
+# T3 Code reads this at launch; keeps its usage data off PostHog
+export T3CODE_TELEMETRY_ENABLED=false
+BASHRC
 fi
 
 unit=~/.config/systemd/user/taildrop.service
@@ -250,7 +250,7 @@ git config --global user.email work@mapringg.com
 if ! grep -qF 'mise activate bash' ~/.bashrc; then
   cat >> ~/.bashrc <<'BASHRC'
 
-# activate mise so the tools it manages are on the PATH
+# Activate mise so the tools it manages are on the PATH
 eval "$(mise activate bash)"
 BASHRC
 fi
