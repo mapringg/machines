@@ -80,7 +80,8 @@ Steps in order for each machine; running the script is one of them.
 4. **Drivers.** NVIDIA from nvidia.com, Custom, driver only. Everything else from
    Windows Update; skip the MSI Driver Utility.
 5. **Run `windows.ps1`** as Administrator.
-6. **Sign in** to 1Password, Tailscale, Steam and Discord.
+6. **Sign in.** Add the 1Password extension to Edge, then sign in to Tailscale, Steam
+   and Discord.
 7. **NVIDIA Control Panel.**
    - Change resolution: MSI 3840x2160 @ 240Hz, LG 2560x1440 @ 165Hz.
    - Set up G-SYNC: on for full screen and windowed, "G-SYNC Compatible", for the MSI

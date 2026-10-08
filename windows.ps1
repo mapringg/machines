@@ -5,8 +5,7 @@ if ($env:COMPUTERNAME -ne "windows") { Rename-Computer -NewName windows }
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\TimeZoneInformation" `
     /v RealTimeIsUniversal /t REG_DWORD /d 1 /f
 
-foreach ($id in "AgileBits.1Password", "Tailscale.Tailscale", "Valve.Steam",
-                "Discord.Discord") {
+foreach ($id in "Tailscale.Tailscale", "Valve.Steam", "Discord.Discord") {
     winget list --id $id --exact --accept-source-agreements | Out-Null
     if ($LASTEXITCODE -ne 0) {
         winget install --id $id --exact --silent `
