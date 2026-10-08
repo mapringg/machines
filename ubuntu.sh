@@ -108,8 +108,10 @@ done
 
 sudo usermod -aG docker "$USER"
 
-gsettings set org.gnome.shell favorite-apps \
-  "$(gsettings get org.gnome.shell favorite-apps | sed 's/firefox_firefox.desktop/helium.desktop/')"
+favorites=$(gsettings get org.gnome.shell favorite-apps | sed 's/firefox_firefox.desktop/helium.desktop/')
+[[ $favorites == *t3code.desktop* ]] ||
+  favorites=${favorites/"'helium.desktop'"/"'helium.desktop', 't3code.desktop'"}
+gsettings set org.gnome.shell favorite-apps "$favorites"
 [ "$(xdg-settings get default-web-browser)" = helium.desktop ] ||
   xdg-settings set default-web-browser helium.desktop
 
@@ -172,6 +174,16 @@ if ! dpkg -s t3code >/dev/null 2>&1; then
   sudo apt install -y /tmp/t3code.deb
   rm /tmp/t3code.deb
 fi
+
+for src in /usr/share/icons/hicolor/*/apps/t3code.png; do
+  dir=${src#/usr/share/icons/}; dir=~/.local/share/icons/${dir%/*}
+  mkdir -p "$dir"
+  fit_icon "$src" "$dir/t3code.png"
+done
+
+entry=~/.local/share/applications/t3code.desktop
+want=$(sed 's/^StartupWMClass=.*/StartupWMClass=com.t3tools.T3Code/' /usr/share/applications/t3code.desktop)
+[ "$(cat "$entry" 2>/dev/null)" = "$want" ] || printf '%s\n' "$want" >"$entry"
 
 if ! grep -qF 'T3CODE_TELEMETRY_ENABLED' ~/.bashrc; then
   cat >> ~/.bashrc <<'BASHRC'
