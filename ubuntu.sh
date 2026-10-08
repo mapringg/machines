@@ -145,7 +145,7 @@ else
   args=(--logical-monitor --primary --scale 1.5 "${msi_mode[@]}")
   want="$msi 3840x2160@239.990 default full (0, 0) 1.5 normal yes"
 fi
-[[ $(layout) == "$want" ]] || gdctl set --persistent "${args[@]}"
+[[ -z $msi || $(layout) == "$want" ]] || gdctl set --persistent "${args[@]}"
 
 gsettings set org.gnome.desktop.interface font-antialiasing 'grayscale'
 
