@@ -9,18 +9,15 @@ the machines drift, and that's fine.
 | `macbook.sh` | MacBook Air M3 — thin client, remote work only |
 | `ubuntu.sh` | Desktop, 931GB NVMe — all development |
 | `windows.ps1` | Desktop, 1.9TB NVMe — gaming only |
-| `server.sh` | Getorli GT105 mini PC, 8845HS, 32GB — always on, agents |
+| `server.sh` | Getorli GT105 mini PC, 8845HS, 32GB — always on |
 
 ## Architecture
 
 ```
- macbook ──── Tailscale ────┬──── server    (always on; agents, SSH + tmux)
+ macbook ──── Tailscale ────┬──── server    (always on; SSH + tmux)
    (thin client)            ├──── ubuntu    (dev; SSH + tmux)
                             └──── windows   (gaming; offline most of the week)
 ```
-
-`server` runs T3 Code's threads, so they keep going while the desktop sleeps or plays
-games.
 
 At the desk I use Ubuntu directly; away, I SSH in from the MacBook. Tailscale SSH means
 no host keys, and tmux means a dropped connection loses nothing.
@@ -51,19 +48,18 @@ Steps in order for each machine; running the script is one of them.
 2. **Installer.** Ubuntu Server 26.04, wired Ethernet. Entire disk, LVM encrypted with
    LUKS, with a passphrase. Hostname `server`, user `mapring`. Leave OpenSSH server
    unticked.
-3. **Burn-in.** Within Shopee's 7-day return window, before tapping "received":
-   1. `curl -fsSL https://tailscale.com/install.sh | sh` and `sudo tailscale up --ssh`.
-      Then `scp ubuntu:Work/mapringg/machines/burnin.sh ~/` and run `./burnin.sh` in
-      tmux. It takes 24 hours and writes `~/burnin-*.log`.
+3. **Tailscale.** At the console, `curl -fsSL https://tailscale.com/install.sh | sh` and
+   `sudo tailscale up --ssh`. The rest is over SSH.
+4. **Burn-in**, on a new machine only, within Shopee's 7-day return window and before
+   tapping "received":
+   1. `scp ubuntu:Work/mapringg/machines/burnin.sh ~/` and run `./burnin.sh` in tmux. It
+      takes 24 hours and writes `~/burnin-*.log`.
    2. Reboot, pick memtest86+ from the GRUB menu (Esc at boot) and run it overnight. If
       Secure Boot refuses it, turn Secure Boot off for the test and back on before
       `server.sh`.
    3. Reboot 20 times and cold-start a few, watching for one that doesn't come up.
-4. **Run `server.sh`.**
-5. **Sign in.** Run `claude` and `codex` once each, and `gh auth login`. Clone the repos
-   and copy the `.env` files from `ubuntu`.
-6. **Pair.** Run `t3 pair --tailscale` and add its URL in T3 Code on `ubuntu`, the
-   MacBook and the phone: Settings → Connections → Add environment.
+5. **Run `server.sh`.** `scp ubuntu:Work/mapringg/machines/server.sh ~/`, then
+   `~/server.sh`.
 
 ### windows.ps1
 
