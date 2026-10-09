@@ -61,7 +61,9 @@ gsettings set org.gnome.shell app-picker-layout "[]"
 gsettings set org.gnome.desktop.peripherals.mouse accel-profile 'flat'
 gsettings set org.gnome.desktop.peripherals.mouse speed -0.33
 
-gnome-extensions disable ding@rastersoft.com
+for ext in $(gnome-extensions list --enabled); do
+  gnome-extensions disable "$ext"
+done
 
 gsettings set org.gnome.desktop.interface font-antialiasing 'grayscale'
 
