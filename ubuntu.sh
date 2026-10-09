@@ -14,6 +14,13 @@ fi
 
 snap list code >/dev/null 2>&1 || sudo snap install code --classic
 
+ls /etc/apt/sources.list.d/charles05-ubuntu-myna-config-* >/dev/null 2>&1 \
+  || sudo add-apt-repository -yn ppa:charles05/myna-config
+
+sudo snap set system experimental.user-daemons=true
+snap list myna >/dev/null 2>&1 || sudo snap install myna --edge
+snap list myna-parakeet >/dev/null 2>&1 || sudo snap install myna-parakeet --edge
+
 if [ ! -f /etc/apt/sources.list.d/github-cli.list ]; then
   sudo install -dm755 /etc/apt/keyrings
   curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
@@ -27,7 +34,7 @@ dpkg -s tailscale >/dev/null 2>&1 || curl -fsSL https://tailscale.com/install.sh
 tailscale status >/dev/null 2>&1 || sudo tailscale up --ssh
 
 sudo apt update
-sudo apt install -y git tmux lazygit deja-dup docker.io mise gh python3-pil
+sudo apt install -y git tmux lazygit deja-dup docker.io mise gh python3-pil myna-config
 
 if ! dpkg -s paper >/dev/null 2>&1; then
   curl -fsSLo /tmp/paper.deb https://download.paper.design/linux/deb
@@ -95,6 +102,10 @@ done
 mkdir -p ~/.local/share/applications
 entry=~/.local/share/applications/t3code.desktop
 want=$(sed 's/^StartupWMClass=.*/StartupWMClass=com.t3tools.T3Code/' /usr/share/applications/t3code.desktop)
+[ "$(cat "$entry" 2>/dev/null)" = "$want" ] || printf '%s\n' "$want" >"$entry"
+
+entry=~/.local/share/applications/myna_myna.desktop
+want=$'[Desktop Entry]\nType=Application\nName=Myna\nNoDisplay=true'
 [ "$(cat "$entry" 2>/dev/null)" = "$want" ] || printf '%s\n' "$want" >"$entry"
 
 git config --global user.name "Sorawit Kongnurat"
