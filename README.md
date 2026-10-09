@@ -92,7 +92,8 @@ Steps in order for each machine; running the script is one of them.
 
 ### macbook.sh
 
-1. **Setup Assistant**, skipping the Apple Account sign-in.
+1. **Setup Assistant**, signing in to the Apple Account: 1Password's Safari extension
+   needs it.
 2. **1Password.** Safari → 1password.com, install, sign in. Have the Emergency Kit's
    Secret Key before erasing.
 3. **Tailscale.** Safari → tailscale.com, install, sign in.
