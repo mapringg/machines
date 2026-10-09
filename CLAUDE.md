@@ -6,12 +6,12 @@ Setup scripts for my machines. README explains the design and holds the manual s
 
 - Imperative subject, capitalized, no trailing period, no `file:` prefix.
 - Aim for 50 characters; never over 72, where GitHub truncates.
-- Subject only, by default. Add a body, wrapped at 72, when the reason isn't obvious.
+- Subject only, never a body.
 
 ## Comments
 
 - None, apart from the shebang and `#Requires`.
-- A reason goes in a name, a check that fails loudly, or the commit body.
+- A reason goes in a name or a check that fails loudly.
 - Before changing a line that looks odd, read why with `git log -L`.
 
 ## Scripts
