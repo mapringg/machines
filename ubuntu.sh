@@ -88,54 +88,10 @@ for src in /usr/share/icons/hicolor/*/apps/t3code.png; do
   fit_icon "$src" "$dir/t3code.png"
 done
 
+mkdir -p ~/.local/share/applications
 entry=~/.local/share/applications/t3code.desktop
 want=$(sed 's/^StartupWMClass=.*/StartupWMClass=com.t3tools.T3Code/' /usr/share/applications/t3code.desktop)
 [ "$(cat "$entry" 2>/dev/null)" = "$want" ] || printf '%s\n' "$want" >"$entry"
-
-if ! dpkg -s handy >/dev/null 2>&1; then
-  tag=$(curl -fsSLo /dev/null -w '%{url_effective}' https://github.com/cjpais/Handy/releases/latest)
-  ver=${tag##*/v}
-  curl -fsSLo /tmp/handy.deb "https://github.com/cjpais/Handy/releases/download/v$ver/Handy_${ver}_amd64.deb"
-  sudo apt install -y /tmp/handy.deb
-  rm /tmp/handy.deb
-fi
-
-for f in handy handy_warning recording transcribing; do
-  png=/usr/lib/Handy/resources/$f.png
-  [ -n "$(dpkg-divert --list "$png")" ] || sudo dpkg-divert --rename --divert "$png.orig" --add "$png"
-  sudo python3 - "$png.orig" "$png" <<'PY'
-import sys
-from PIL import Image
-src, dst = sys.argv[1:]
-im = Image.open(src).convert("RGBA")
-glyph = im.crop(im.getchannel("A").getbbox())
-k = im.width * 227 / 256 / max(glyph.size)
-glyph = glyph.resize((round(glyph.width * k), round(glyph.height * k)), Image.LANCZOS)
-out = Image.new("RGBA", im.size)
-out.paste(glyph, ((im.width - glyph.width) // 2, (im.height - glyph.height) // 2))
-out.save(dst)
-PY
-done
-
-mkdir -p ~/.local/share/applications
-sed 's|^Icon=.*|Icon=/usr/share/icons/hicolor/256x256@2/apps/handy.png|' \
-  /usr/share/applications/Handy.desktop > ~/.local/share/applications/Handy.desktop
-
-sudo apt install -y ydotool
-sudo usermod -aG input "$USER"
-systemctl --user enable ydotool.service
-
-gsettings set org.gnome.settings-daemon.plugins.media-keys rotate-video-lock-static "['XF86RotationLockToggle']"
-KB=/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/handy/
-list=$(gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings)
-case "$list" in
-  *"$KB"*) ;;
-  "@as []") gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "['$KB']" ;;
-  *)        gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "${list%]}, '$KB']" ;;
-esac
-gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:$KB name 'Handy'
-gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:$KB command 'handy --toggle-transcription'
-gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:$KB binding '<Super>o'
 
 git config --global user.name "Sorawit Kongnurat"
 git config --global user.email work@mapringg.com

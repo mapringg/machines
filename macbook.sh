@@ -10,7 +10,7 @@ if [ ! -x /opt/homebrew/bin/brew ]; then
 fi
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
-brew install --cask --adopt visual-studio-code handy t3-code@nightly
+brew install --cask --adopt visual-studio-code t3-code@nightly
 
 code --install-extension ms-vscode-remote.remote-ssh
 

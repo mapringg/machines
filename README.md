@@ -40,13 +40,10 @@ Steps in order for each machine; running the script is one of them.
 5. **Sign in.** Add the 1Password extension to Firefox, then sign in to Tailscale. Run
    `claude` and `codex` once each.
 6. **Restore.** Copy back `~/.ssh`, `~/.kube`, `~/Work` and the `.env` files, then run
-   the first Déjà Dup backup. Reboot for the docker and input groups.
+   the first Déjà Dup backup. Reboot for the docker group.
 7. **Displays.** Settings → Displays: MSI 3840x2160 @ 240Hz, 150%, primary; LG
    2560x1440 @ 165Hz, portrait, 100%, left of the MSI and centred on its height.
-8. **Handy.** Pick Cohere Transcribe and turn on launch at login. Advanced → Paste
-   Method → Clipboard (Ctrl+Shift+V). Leave the overlay off. The shortcut is Super+O,
-   not the in-app one.
-9. **Android.** Open Android Studio once and take the Standard setup. On each virtual
+8. **Android.** Open Android Studio once and take the Standard setup. On each virtual
    device, Device Manager → edit → Additional settings → Graphics acceleration →
    Hardware.
 
@@ -101,9 +98,7 @@ Steps in order for each machine; running the script is one of them.
 3. **Tailscale.** Safari → tailscale.com, install, sign in.
 4. **Run `macbook.sh`.** `scp ubuntu:Work/mapringg/machines/macbook.sh ~/`, then
    `~/macbook.sh`.
-5. **Handy.** Grant Microphone and Accessibility, pick Cohere Transcribe, turn on launch
-   at login.
-6. **Log out**, so key repeat applies.
+5. **Log out**, so key repeat applies.
 
 ## Desktop BIOS
 
