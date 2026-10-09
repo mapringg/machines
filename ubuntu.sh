@@ -14,8 +14,8 @@ fi
 
 snap list code >/dev/null 2>&1 || sudo snap install code --classic
 
-ls /etc/apt/sources.list.d/charles05-ubuntu-myna-config-* >/dev/null 2>&1 \
-  || sudo add-apt-repository -yn ppa:charles05/myna-config
+ls /etc/apt/sources.list.d/canonical-desktop-team-ubuntu-myna-* >/dev/null 2>&1 \
+  || sudo add-apt-repository -yn ppa:canonical-desktop-team/myna
 
 sudo snap set system experimental.user-daemons=true
 snap list myna >/dev/null 2>&1 || sudo snap install myna --edge
@@ -68,9 +68,11 @@ gsettings set org.gnome.shell app-picker-layout "[]"
 gsettings set org.gnome.desktop.peripherals.mouse accel-profile 'flat'
 gsettings set org.gnome.desktop.peripherals.mouse speed -0.33
 
+myna_ext=myna-shell@canonical.com
 for ext in $(gnome-extensions list --enabled); do
-  gnome-extensions disable "$ext"
+  [ "$ext" = "$myna_ext" ] || gnome-extensions disable "$ext"
 done
+gsettings set org.gnome.shell enabled-extensions "['$myna_ext']"
 
 gsettings set org.gnome.desktop.interface font-antialiasing 'grayscale'
 
