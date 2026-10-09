@@ -43,9 +43,6 @@ Steps in order for each machine; running the script is one of them.
    the first Déjà Dup backup. Reboot for the docker group.
 7. **Displays.** Settings → Displays: MSI 3840x2160 @ 240Hz, 150%, primary; LG
    2560x1440 @ 165Hz, portrait, 100%, left of the MSI and centred on its height.
-8. **Android.** Open Android Studio once and take the Standard setup. On each virtual
-   device, Device Manager → edit → Additional settings → Graphics acceleration →
-   Hardware.
 
 ### server.sh
 

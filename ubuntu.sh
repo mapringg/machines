@@ -104,54 +104,6 @@ eval "$(mise activate bash)"
 BASHRC
 fi
 
-sudo apt install -y openjdk-17-jdk
-
-if [ ! -x /opt/android-studio/bin/studio ]; then
-  url=$(curl -fsSL https://jb.gg/android-studio-releases-list.json | python3 -c '
-import json, sys
-rel = next(i for i in json.load(sys.stdin)["content"]["item"] if i["channel"] == "Release")
-print(next(d["link"] for d in rel["download"] if d["link"].endswith("-linux.tar.gz")))')
-  sudo install -d -o "$USER" -g "$USER" /opt/android-studio
-  curl -fsSL "$url" | tar -xz -C /opt/android-studio --strip-components=1
-fi
-
-mkdir -p ~/.local/share/icons/hicolor/scalable/apps
-python3 - /opt/android-studio/bin/studio.png /opt/android-studio/bin/studio.svg \
-  ~/.local/share/icons/hicolor/scalable/apps/android-studio.svg <<'PY'
-import re, sys
-from PIL import Image
-png, src, dst = sys.argv[1:]
-im = Image.open(png).convert("RGBA")
-l, _, r, _ = im.getchannel("A").point(lambda a: 255 if a > 128 else 0).getbbox()
-k = 112 / (r - l)
-svg = open(src).read()
-head = re.match(r"<svg[^>]*>", svg).end()
-g = f'<g transform="translate({64 * (1 - k):.3f} {64 * (1 - k):.3f}) scale({k:.5f})">'
-open(dst, "w").write(svg[:head] + g + svg[head:].replace("</svg>", "</g></svg>"))
-PY
-
-cat > ~/.local/share/applications/jetbrains-studio.desktop <<'DESKTOP'
-[Desktop Entry]
-Type=Application
-Name=Android Studio
-Icon=android-studio
-Exec=/opt/android-studio/bin/studio %f
-Categories=Development;IDE;
-StartupWMClass=jetbrains-studio
-StartupNotify=true
-DESKTOP
-
-gsettings set org.gnome.mutter check-alive-timeout 0
-
-if ! grep -qF 'ANDROID_HOME' ~/.bashrc; then
-  cat >> ~/.bashrc <<'BASHRC'
-
-# Android SDK, where Android Studio's setup wizard puts it
-export ANDROID_HOME="$HOME/Android/Sdk"
-export PATH="$PATH:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools"
-BASHRC
-fi
-
 mise use -g kubectl k9s
 
 mise use -g github:zsa/zapp
