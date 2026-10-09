@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-[[ $EUID -eq 0 ]] || exec sudo "$0" "$@"
+[ "$EUID" -eq 0 ] || exec sudo "$0" "$@"
 HOURS=${1:-24}
 HOME_DIR=$(getent passwd "${SUDO_USER:-root}" | cut -d: -f6)
 STAMP=$(date +%F-%H%M)
@@ -32,11 +32,11 @@ smartctl -t long "$DISK" || echo "Self-test not supported; skipping"
 
 hwmon() {
   for d in /sys/class/hwmon/hwmon*; do
-    [[ $(cat "$d/name") == "$1" ]] && { echo "$d/temp1_input"; return; }
+    [ "$(cat "$d/name")" = "$1" ] && { echo "$d/temp1_input"; return; }
   done
   return 0
 }
-celsius() { [[ -n $1 ]] && echo $(( $(cat "$1") / 1000 )) || echo NA; }
+celsius() { [ -n "$1" ] && echo $(( $(cat "$1") / 1000 )) || echo NA; }
 CPU_T=$(hwmon k10temp)
 NVME_T=$(hwmon nvme)
 echo "time,cpu_c,nvme_c,avg_mhz" >"$TEMPS"

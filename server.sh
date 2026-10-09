@@ -3,7 +3,7 @@ set -euo pipefail
 
 LUKS=/dev/disk/by-uuid/$(awk '$2 ~ /^UUID=/ {sub(/^UUID=/, "", $2); print $2; exit}' /etc/crypttab)
 
-command -v tailscale >/dev/null || curl -fsSL https://tailscale.com/install.sh | sh
+dpkg -s tailscale >/dev/null 2>&1 || curl -fsSL https://tailscale.com/install.sh | sh
 
 tailscale status >/dev/null 2>&1 || sudo tailscale up --ssh
 
@@ -16,7 +16,10 @@ if [ "$(cat "$sshd_conf" 2>/dev/null)" != "$sshd_want" ]; then
   printf '%s\n' "$sshd_want" | sudo tee "$sshd_conf" >/dev/null
   sshd_changed=1
 fi
-dpkg -s openssh-server >/dev/null 2>&1 || { sudo apt install -y openssh-server; sshd_changed=1; }
+if ! dpkg -s openssh-server >/dev/null 2>&1; then
+  sudo apt install -y openssh-server
+  sshd_changed=1
+fi
 if [ -n "${sshd_changed:-}" ]; then
   sudo systemctl daemon-reload
   sudo systemctl restart ssh.socket
@@ -50,10 +53,12 @@ fi
 
 sudo usermod -aG docker "$USER"
 
-command -v claude >/dev/null 2>&1 || curl -fsSL https://claude.ai/install.sh | bash
+[ -x ~/.local/bin/claude ] || curl -fsSL https://claude.ai/install.sh | bash
 
-[ -x ~/.local/bin/codex ] || curl -fsSL https://chatgpt.com/codex/install.sh \
-  | PATH="$HOME/.local/bin:$PATH" CODEX_NON_INTERACTIVE=1 sh
+if [ ! -x ~/.local/bin/codex ]; then
+  curl -fsSL https://chatgpt.com/codex/install.sh \
+    | PATH="$HOME/.local/bin:$PATH" CODEX_NON_INTERACTIVE=1 sh
+fi
 
 [ -x ~/.local/bin/t3 ] || curl -fsSL https://t3.codes/install.sh | T3CODE_CHANNEL=nightly sh
 sudo loginctl enable-linger "$USER"

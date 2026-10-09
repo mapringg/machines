@@ -2,7 +2,7 @@
 set -euo pipefail
 
 BACKUP=/dev/disk/by-label/Backup
-[[ -e $BACKUP ]] || { echo "Plug in the Backup drive first." >&2; exit 1; }
+[ -e "$BACKUP" ] || { echo "Plug in the Backup drive first." >&2; exit 1; }
 
 if [ ! -f /etc/apt/sources.list.d/mise.list ]; then
   sudo install -dm755 /etc/apt/keyrings
@@ -22,7 +22,7 @@ if [ ! -f /etc/apt/sources.list.d/github-cli.list ]; then
     | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null
 fi
 
-command -v tailscale >/dev/null || curl -fsSL https://tailscale.com/install.sh | sh
+dpkg -s tailscale >/dev/null 2>&1 || curl -fsSL https://tailscale.com/install.sh | sh
 
 tailscale status >/dev/null 2>&1 || sudo tailscale up --ssh
 
@@ -71,10 +71,12 @@ gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
 gsettings set org.gnome.desktop.interface gtk-theme 'Yaru-dark'
 gsettings set org.gnome.desktop.interface icon-theme 'Yaru-dark'
 
-command -v claude >/dev/null 2>&1 || curl -fsSL https://claude.ai/install.sh | bash
+[ -x ~/.local/bin/claude ] || curl -fsSL https://claude.ai/install.sh | bash
 
-[ -x ~/.local/bin/codex ] || curl -fsSL https://chatgpt.com/codex/install.sh \
-  | PATH="$HOME/.local/bin:$PATH" CODEX_NON_INTERACTIVE=1 sh
+if [ ! -x ~/.local/bin/codex ]; then
+  curl -fsSL https://chatgpt.com/codex/install.sh \
+    | PATH="$HOME/.local/bin:$PATH" CODEX_NON_INTERACTIVE=1 sh
+fi
 
 if ! dpkg -s t3code >/dev/null 2>&1; then
   releases=$(curl -fsSL 'https://api.github.com/repos/pingdotgg/t3code/releases?per_page=20')
@@ -121,7 +123,7 @@ if [ "$(cat "$udev_rules" 2>/dev/null)" != "$udev_want" ]; then
 fi
 
 mnt=$(findmnt -no TARGET "$BACKUP" | head -1 || true)
-if [[ -z $mnt ]]; then
+if [ -z "$mnt" ]; then
   udisksctl mount -b "$BACKUP" >/dev/null
   mnt=$(findmnt -no TARGET "$BACKUP" | head -1)
 fi
