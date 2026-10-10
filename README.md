@@ -44,7 +44,7 @@ Desktop, 1.9TB NVMe.
    irm https://raw.githubusercontent.com/mapringg/machines/main/windows.ps1 | iex
    ```
 5. **Sign in:** 1Password extension in Chrome, Tailscale, Steam, Discord, VS Code
-   Settings Sync. Then `scp -r mapring@server:.kube $HOME`.
+   Settings Sync.
 6. **Settings:**
    - About → Rename this PC: `windows`
    - Personalization → Colors: Dark
@@ -86,14 +86,14 @@ MacBook Air M3.
    ```
    bash <(curl -fsSL https://raw.githubusercontent.com/mapringg/machines/main/macbook.sh)
    ```
-4. **Sign in:** 1Password extension in Chrome, VS Code Settings Sync. Then
-   `scp -r mapring@server:.kube ~/`.
+4. **Sign in:** 1Password extension in Chrome, VS Code Settings Sync.
 
 ## Rejected
 
 - Server disk encryption: it never leaves the bedroom, and a TPM unlock can break on
   a BIOS update. If the SSD goes back under warranty, revoke its credentials.
 - Ubuntu desktop: Windows is already there for games.
+- Kubernetes on the clients: k9s on the server is enough.
 - WSL2: unreliable after Windows Update reboots.
 - Nix: far from defaults, and doesn't cover Windows.
 - T3 Code desktop app: the server's page always matches its version.
