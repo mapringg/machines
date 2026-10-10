@@ -1,7 +1,7 @@
 # machines
 
 `ubuntu` does all development. `windows` (desk, games) and `apple` (away) are clients
-over Tailscale: VS Code Remote-SSH, T3 Code as a Chrome bookmark. GitHub is the backup.
+over Tailscale: VS Code Remote-SSH, T3 Code in Chrome. GitHub is the backup.
 
 Reinstall only when a machine is new or broken. Have 1Password's Emergency Kit first.
 
@@ -22,7 +22,7 @@ Getorli GT105, 8845HS, 32GB.
    bash <(curl -fsSL https://raw.githubusercontent.com/mapringg/machines/main/ubuntu.sh)
    ```
 5. **Sign in:** `claude`, `codex`, `gh auth login`.
-6. **T3 Code:** bookmark the URL this prints in Chrome on each client:
+6. **T3 Code:** open the URL this prints in Chrome on each client:
    ```
    sudo tailscale set --operator=$USER && t3 pair --tailscale
    ```
