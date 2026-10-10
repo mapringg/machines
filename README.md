@@ -28,7 +28,7 @@ Getorli GT105, 8845HS, 32GB.
    ```
    sudo tailscale set --operator=$USER && t3 pair --tailscale
    ```
-7. **T3 Code's browser:** lets agents open pages on the server:
+7. **T3 Code's browser:** after an agent first opens a page, which downloads it:
    ```
    sudo ~/.local/bin/t3 browser setup
    ```
