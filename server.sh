@@ -8,7 +8,7 @@ sudo usermod -aG docker "$USER"
 [ -x ~/.local/bin/mise ] || curl -fsSL https://mise.run/bash | sh
 ~/.local/bin/mise use -g gh kubectl k9s claude codex yazi lazydocker
 
-[ -x ~/.local/bin/t3 ] || curl -fsSL https://t3.codes/install.sh | sh
+[ -x ~/.local/bin/t3 ] || curl -fsSL https://t3.codes/install.sh | T3CODE_CHANNEL=nightly sh
 ~/.local/bin/t3 service install
 
 git config --global user.name "Sorawit Kongnurat"
