@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-LUKS=/dev/disk/by-uuid/$(awk '$2 ~ /^UUID=/ {sub(/^UUID=/, "", $2); print $2; exit}' /etc/crypttab)
+sudo apt update
+sudo apt install -y docker.io lazygit
+sudo usermod -aG docker "$USER"
 
-sudo apt install -y tpm2-tools
+[ -x ~/.local/bin/mise ] || curl -fsSL https://mise.run/bash | sh
+~/.local/bin/mise use -g gh kubectl k9s claude codex
 
-if ! sudo cryptsetup luksDump "$LUKS" | grep -q systemd-tpm2; then
-  sudo systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7 "$LUKS"
-fi
-if ! grep -q tpm2-device /etc/crypttab; then
-  sudo sed -i 's/ luks$/ luks,tpm2-device=auto/' /etc/crypttab
-fi
-for k in /boot/vmlinuz-*; do
-  sudo dracut --force --kver "${k#/boot/vmlinuz-}"
-done
+[ -x ~/.local/bin/t3 ] || curl -fsSL https://t3.codes/install.sh | sh
+~/.local/bin/t3 service install
+
+git config --global user.name "Sorawit Kongnurat"
+git config --global user.email work@mapringg.com
