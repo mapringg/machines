@@ -43,8 +43,8 @@ Desktop, 1.9TB NVMe.
    ```
    irm https://raw.githubusercontent.com/mapringg/machines/main/windows.ps1 | iex
    ```
-5. **Sign in:** 1Password extension in Chrome, Tailscale, Steam, Discord, VS Code
-   Settings Sync.
+5. **Sign in:** 1Password extension in Chrome, Tailscale, Wispr Flow, Steam, Discord,
+   VS Code Settings Sync.
 6. **Settings:**
    - About → Rename this PC: `windows`
    - Personalization → Colors: Dark
@@ -86,7 +86,7 @@ MacBook Air M3.
    ```
    bash <(curl -fsSL https://raw.githubusercontent.com/mapringg/machines/main/macbook.sh)
    ```
-4. **Sign in:** 1Password extension in Chrome, VS Code Settings Sync.
+4. **Sign in:** 1Password extension in Chrome, Wispr Flow, VS Code Settings Sync.
 
 ## Rejected
 
