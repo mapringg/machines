@@ -2,7 +2,7 @@
 set -euo pipefail
 
 sudo apt update
-sudo apt install -y docker.io lazygit
+sudo apt install -y docker.io docker-compose-v2 lazygit
 sudo usermod -aG docker "$USER"
 
 [ -x ~/.local/bin/mise ] || curl -fsSL https://mise.run/bash | sh
