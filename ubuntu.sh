@@ -7,6 +7,7 @@ sudo usermod -aG docker "$USER"
 
 [ -x ~/.local/bin/mise ] || curl -fsSL https://mise.run/bash | sh
 ~/.local/bin/mise use -g gh kubectl k9s claude codex yazi lazydocker
+~/.local/bin/mise settings add idiomatic_version_file_enable_tools node
 
 [ -x ~/.local/bin/t3 ] || curl -fsSL https://t3.codes/install.sh | T3CODE_CHANNEL=nightly sh
 ~/.local/bin/t3 service install
