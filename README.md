@@ -1,7 +1,7 @@
 # machines
 
 `ubuntu` does all development. `windows` (desk, games) and `apple` (away) are clients
-over Tailscale: VS Code Remote-SSH. GitHub is the backup.
+over Tailscale: VS Code Remote-SSH, T3 Code in Chrome. GitHub is the backup.
 
 Reinstall only when a machine is new or broken. Have 1Password's Emergency Kit first.
 
@@ -21,7 +21,12 @@ Getorli GT105, 8845HS, 32GB.
    ```
    bash <(curl -fsSL https://raw.githubusercontent.com/mapringg/machines/main/ubuntu.sh)
    ```
-5. **Sign in:** `gh auth login`.
+5. **Sign in:** `claude`, `codex`, `gh auth login`, and Ubuntu Pro (Livepatch, ESM) with
+   the token from ubuntu.com/pro: `sudo pro attach <token>`.
+6. **T3 Code:** open the URL this prints in Chrome on each client:
+   ```
+   sudo tailscale set --operator=$USER && t3 pair --tailscale
+   ```
 
 ## windows
 
@@ -81,4 +86,5 @@ MacBook Air M3.
 - Kubernetes on the clients: k9s on `ubuntu` is enough.
 - WSL2: unreliable after Windows Update reboots.
 - Nix: far from defaults, and doesn't cover Windows.
+- T3 Code desktop app: `ubuntu`'s page always matches its version.
 - Web database tools: they need MongoDB 4.2; work runs 4.0.
