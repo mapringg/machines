@@ -2,7 +2,7 @@
 set -euo pipefail
 
 sudo apt update
-sudo apt install -y docker.io docker-compose-v2 lazygit wireguard-tools
+sudo apt install -y docker.io docker-compose-v2 ffmpeg lazygit unzip wireguard-tools
 sudo usermod -aG docker "$USER"
 sudo timedatectl set-timezone Asia/Bangkok
 
