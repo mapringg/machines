@@ -4,6 +4,7 @@ set -euo pipefail
 sudo apt update
 sudo apt install -y docker.io docker-compose-v2 lazygit wireguard-tools
 sudo usermod -aG docker "$USER"
+sudo timedatectl set-timezone Asia/Bangkok
 
 [ -x ~/.local/bin/mise ] || curl -fsSL https://mise.run/bash | sh
 ~/.local/bin/mise use -g gh kubectl k9s claude codex yazi lazydocker
