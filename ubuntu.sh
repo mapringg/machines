@@ -7,7 +7,8 @@ sudo usermod -aG docker "$USER"
 sudo timedatectl set-timezone Asia/Bangkok
 
 [ -x ~/.local/bin/mise ] || curl -fsSL https://mise.run/bash | sh
-~/.local/bin/mise use -g gh kubectl k9s claude codex yazi lazydocker pnpm
+~/.local/bin/mise use -g gh kubectl k9s claude codex yazi lazydocker pnpm op fnox age
+~/.local/bin/mise settings experimental=true
 ~/.local/bin/mise settings add idiomatic_version_file_enable_tools node
 ~/.local/bin/mise settings npm.package_manager=npm
 ~/.local/bin/mise use -g 'npm:obsidian-headless[postinstall=cd $MISE_TOOL_INSTALL_PATH/lib/node_modules/obsidian-headless && npm rebuild better-sqlite3]'
@@ -35,3 +36,7 @@ sudo ~/.local/bin/t3 browser setup
 
 git config --global user.name "Sorawit Kongnurat"
 git config --global user.email work@mapringg.com
+mkdir -p ~/.config/git
+for p in fnox.local.toml 'fnox.*.local.toml' mise.local.toml 'mise.*.local.toml'; do
+  grep -qxF "$p" ~/.config/git/ignore 2>/dev/null || echo "$p" >> ~/.config/git/ignore
+done

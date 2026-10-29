@@ -23,11 +23,23 @@ Getorli GT105, 8845HS, 32GB.
    ```
 5. **Sign in:** `claude`, `codex`, `gh auth login`, and Ubuntu Pro (Livepatch, ESM) with
    the token from ubuntu.com/pro: `sudo pro attach <token>`.
-6. **T3 Code:** open the URL this prints in Chrome on each client:
+6. **Agents:** skills, instructions, and settings from the private `skills` repo. In
+   `codex`, trust the secrets guard once with `/hooks`.
+   ```
+   gh repo clone mapringg/skills ~/code/mapringg/skills
+   bash ~/code/mapringg/skills/install.sh
+   ```
+7. **T3 Code:** open the URL this prints in Chrome on each client:
    ```
    sudo tailscale set --operator=$USER && t3 pair --tailscale
    ```
-7. **Obsidian Sync,** once the end-to-end encrypted remote vault `vault` exists:
+8. **Secrets:** paste the token from the 1Password item
+   `1Password Service Account (Dev)`, then run `secret init <item>...` in each app
+   folder (`secret list` shows the items).
+   ```
+   secret setup
+   ```
+9. **Obsidian Sync,** once the end-to-end encrypted remote vault `vault` exists:
    ```
    ob login && ob sync-setup --vault vault --path ~/vault --device-name ubuntu
    systemctl --user enable --now obsidian-sync
