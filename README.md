@@ -27,9 +27,7 @@ Getorli GT105, 8845HS, 32GB.
    ```
    sudo tailscale set --operator=$USER && t3 pair --tailscale
    ```
-7. **Environment:** agents, skills and secrets come from the private `environment` repo.
-   Follow its README.
-8. **Obsidian Sync,** once the end-to-end encrypted remote vault `vault` exists:
+7. **Obsidian Sync,** once the end-to-end encrypted remote vault `vault` exists:
    ```
    ob login && ob sync-setup --vault vault --path ~/vault --device-name ubuntu
    systemctl --user enable --now obsidian-sync
