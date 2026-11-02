@@ -3,7 +3,13 @@
 `ubuntu` does all development. `windows` (desk, games) and `apple` (away) are clients
 over Tailscale: VS Code Remote-SSH, T3 Code in Chrome. GitHub is the backup.
 
-Reinstall only when a machine is new or broken. Have 1Password's Emergency Kit first.
+Use the matching machine section for setup; reinstall only when a machine is new or
+broken. Have 1Password's Emergency Kit before starting. Installation steps erase
+disks, so confirm the target machine and disks before proceeding.
+
+The linked scripts define installed tools and automated configuration. The steps
+below cover manual setup. For a repository change, review the local script; the
+download commands run the version published on `main`.
 
 ## ubuntu
 
@@ -17,7 +23,8 @@ Getorli GT105, 8845HS, 32GB.
    ```
    curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up --ssh
    ```
-4. **Script,** then log out and back in for the `docker` group:
+4. **[Script](ubuntu.sh),** then log out and back in. Confirm `id -nG` includes
+   `docker`:
    ```
    bash <(curl -fsSL https://raw.githubusercontent.com/mapringg/machines/main/ubuntu.sh)
    ```
@@ -33,6 +40,22 @@ Getorli GT105, 8845HS, 32GB.
    systemctl --user enable --now obsidian-sync
    ```
 
+Setup is complete when a new Tailscale SSH session reaches `ubuntu`, `gh auth status`
+shows the intended account, `pro status` shows Livepatch and ESM enabled, and
+`systemctl --user status obsidian-sync` shows the service running with the remote
+vault's contents appearing in `~/vault`. Check client access using
+[Client connections](#client-connections).
+
+### Design decisions
+
+- Disk encryption stays off: this machine stays in the bedroom, and a TPM unlock can
+  break on a BIOS update. If the SSD goes back under warranty, revoke its credentials.
+- Use the server without a desktop; Windows handles games.
+- Use native Linux development; WSL2 was unreliable after Windows Update reboots.
+- Use platform package managers; Nix is far from defaults and does not cover Windows.
+- Use local database tools compatible with work's MongoDB 4.0; the web tools considered
+  required MongoDB 4.2.
+
 ## windows
 
 Desktop, 7800X3D, 1.9TB NVMe.
@@ -43,7 +66,7 @@ Desktop, 7800X3D, 1.9TB NVMe.
    Offline account `mapring`.
 3. **Drivers:** NVIDIA from nvidia.com, Custom, driver only. The rest from Windows
    Update; skip the MSI Driver Utility.
-4. **Script,** in PowerShell:
+4. **[Script](windows.ps1),** in PowerShell:
    ```
    irm https://raw.githubusercontent.com/mapringg/machines/main/windows.ps1 | iex
    ```
@@ -58,9 +81,11 @@ Desktop, 7800X3D, 1.9TB NVMe.
    400.
 8. **Each game:** V-Sync off, NVIDIA Reflex On.
 
-### BIOS
+Finish with the [client connection checks](#client-connections).
 
-MSI PRO B650-P WIFI. After a CMOS reset, EXPO Profile 1 and these fan curves, both PWM:
+### BIOS after a CMOS reset
+
+MSI PRO B650-P WIFI: select EXPO Profile 1 and these fan curves, both PWM:
 
 | CPU_FAN | SYS_FAN |
 |---|---|
@@ -78,18 +103,18 @@ MacBook Air M3.
 1. **Setup Assistant,** then System Settings:
    - General → About → Name: `apple`
    - Keyboard: key repeat fastest, delay shortest
-2. **Script,** in Terminal:
+2. **[Script](apple.sh),** in Terminal:
    ```
    bash <(curl -fsSL https://raw.githubusercontent.com/mapringg/machines/main/apple.sh)
    ```
 
-## Rejected
+Finish with the [client connection checks](#client-connections).
 
-- Disk encryption on `ubuntu`: it never leaves the bedroom, and a TPM unlock can break
-  on a BIOS update. If the SSD goes back under warranty, revoke its credentials.
-- A desktop on `ubuntu`: Windows is already there for games.
-- Kubernetes on the clients: k9s on `ubuntu` is enough.
-- WSL2: unreliable after Windows Update reboots.
-- Nix: far from defaults, and doesn't cover Windows.
-- T3 Code desktop app: `ubuntu`'s page always matches its version.
-- Web database tools: they need MongoDB 4.2; work runs 4.0.
+## Client connections
+
+On each client, sign in to Tailscale on the same tailnet as `ubuntu`. Setup is complete
+when VS Code Remote-SSH can open a folder as `mapring` on `ubuntu`, and Chrome can open
+the T3 Code page paired in the [Ubuntu setup](#ubuntu).
+
+Use T3 Code through Ubuntu's page so the client always matches its version. Run
+Kubernetes tooling on `ubuntu`; its k9s installation covers the clients' needs.
