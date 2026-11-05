@@ -5,7 +5,7 @@ over Tailscale: VS Code Remote-SSH, T3 Code in Chrome. GitHub is the backup.
 
 Use the matching machine section for setup; reinstall only when a machine is new or
 broken. Have 1Password's Emergency Kit before starting. Installation steps erase
-disks, so confirm the target machine and disks before proceeding.
+disks, so confirm the target machine and disks first.
 
 The linked scripts define installed tools and automated configuration. The steps
 below cover manual setup. For a repository change, review the local script; the
@@ -43,12 +43,12 @@ Getorli GT105, 8845HS, 32GB.
 Setup is complete when a new Tailscale SSH session reaches `ubuntu`, `gh auth status`
 shows the intended account, `pro status` shows Livepatch and ESM enabled, and
 `systemctl --user status obsidian-sync` shows the service running with the remote
-vault's contents appearing in `~/vault`. Check client access using
-[Client connections](#client-connections).
+vault's contents appearing in `~/vault`. Finish with the
+[client connection checks](#client-connections).
 
 ### Design decisions
 
-- Disk encryption stays off: this machine stays in the bedroom, and a TPM unlock can
+- Disk encryption is off because the machine stays in the bedroom, and a TPM unlock can
   break on a BIOS update. If the SSD goes back under warranty, revoke its credentials.
 - Use the server without a desktop; Windows handles games.
 - Use native Linux development; WSL2 was unreliable after Windows Update reboots.
@@ -116,5 +116,5 @@ On each client, sign in to Tailscale on the same tailnet as `ubuntu`. Setup is c
 when VS Code Remote-SSH can open a folder as `mapring` on `ubuntu`, and Chrome can open
 the T3 Code page paired in the [Ubuntu setup](#ubuntu).
 
-Use T3 Code through Ubuntu's page so the client always matches its version. Run
-Kubernetes tooling on `ubuntu`; its k9s installation covers the clients' needs.
+Use T3 Code through Ubuntu's page so the client always matches the server's version.
+Run Kubernetes tooling on `ubuntu`; clients don't install k9s.
