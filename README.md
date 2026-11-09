@@ -1,15 +1,14 @@
 # machines
 
 `ubuntu` does all development. `windows` (desk, games) and `apple` (away) are clients
-over Tailscale: VS Code Remote-SSH, the OpenCode desktop app. GitHub is the backup.
+over Tailscale: VS Code Remote-SSH and OpenCode in the browser; the phone uses the
+OpenCode mobile app. GitHub is the backup.
 
 Use the matching machine section for setup; reinstall only when a machine is new or
 broken. Have 1Password's Emergency Kit before starting. Installation steps erase
 disks, so confirm the target machine and disks first.
 
-The linked scripts define installed tools and automated configuration. The steps
-below cover manual setup. For a repository change, review the local script; the
-download commands run the version published on `main`.
+Each section's script does the automated setup; its steps cover the rest.
 
 ## ubuntu
 
@@ -115,9 +114,8 @@ Finish with the [client connection checks](#client-connections).
 ## Client connections
 
 On each client, sign in to Tailscale on the same tailnet as `ubuntu`. Setup is complete
-when VS Code Remote-SSH can open a folder as `mapring` on `ubuntu`, and the
-[OpenCode desktop app](https://opencode.ai/docs/#desktop) connects to
-`https://ubuntu.<tailnet>.ts.net` with the password printed by
+when VS Code Remote-SSH can open a folder as `mapring` on `ubuntu`, and a browser
+opens OpenCode at `https://ubuntu.<tailnet>.ts.net` with the password printed by
 `jq -r .password ~/.config/opencode/service.json` on `ubuntu`. The Android phone
 connects the same way with the OpenCode mobile app.
 
