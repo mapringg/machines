@@ -1,7 +1,7 @@
 # machines
 
 `ubuntu` does all development. `windows` (desk, games) and `apple` (away) are clients
-over Tailscale: VS Code Remote-SSH, T3 Code in Chrome. GitHub is the backup.
+over Tailscale: VS Code Remote-SSH, the OpenCode desktop app. GitHub is the backup.
 
 Use the matching machine section for setup; reinstall only when a machine is new or
 broken. Have 1Password's Emergency Kit before starting. Installation steps erase
@@ -30,9 +30,11 @@ Getorli GT105, 8845HS, 32GB.
    ```
 5. **Sign in:** `gh auth login`, and Ubuntu Pro (Livepatch, ESM) with the token from
    ubuntu.com/pro: `sudo pro attach <token>`.
-6. **T3 Code:** open the URL this prints in Chrome on each client:
+6. **OpenCode:** let your user manage Tailscale Serve, then set up the
+   [environment](https://github.com/mapringg/environment), whose `install.sh` serves
+   OpenCode on the tailnet at `https://ubuntu.<tailnet>.ts.net`:
    ```
-   sudo tailscale set --operator=$USER && t3 pair --tailscale
+   sudo tailscale set --operator=$USER
    ```
 7. **Obsidian Sync,** once the end-to-end encrypted remote vault `vault` exists:
    ```
@@ -113,8 +115,10 @@ Finish with the [client connection checks](#client-connections).
 ## Client connections
 
 On each client, sign in to Tailscale on the same tailnet as `ubuntu`. Setup is complete
-when VS Code Remote-SSH can open a folder as `mapring` on `ubuntu`, and Chrome can open
-the T3 Code page paired in the [Ubuntu setup](#ubuntu).
+when VS Code Remote-SSH can open a folder as `mapring` on `ubuntu`, and the
+[OpenCode desktop app](https://opencode.ai/docs/#desktop) connects to
+`https://ubuntu.<tailnet>.ts.net` with the password printed by
+`jq -r .password ~/.config/opencode/service.json` on `ubuntu`. The Android phone
+connects the same way with the OpenCode mobile app.
 
-Use T3 Code through Ubuntu's page so the client always matches the server's version.
 Run Kubernetes tooling on `ubuntu`; clients don't install k9s.

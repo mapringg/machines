@@ -31,9 +31,7 @@ WantedBy=default.target
 EOF
 systemctl --user daemon-reload
 
-[ -x ~/.local/bin/t3 ] || curl -fsSL https://t3.codes/install.sh | T3CODE_CHANNEL=nightly sh
-~/.local/bin/t3 service install
-sudo ~/.local/bin/t3 browser setup
+[ -x ~/.opencode/bin/opencode ] || curl -fsSL https://opencode.ai/v2/install | bash
 
 git config --global user.name "Sorawit Kongnurat"
 git config --global user.email work@mapringg.com
