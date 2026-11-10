@@ -32,7 +32,9 @@ WantedBy=default.target
 EOF
 systemctl --user daemon-reload
 
-[ -x ~/.opencode/bin/opencode ] || curl -fsSL https://opencode.ai/v2/install | bash
+[ -x ~/.local/bin/t3 ] || curl -fsSL https://t3.codes/install.sh | sh
+~/.local/bin/t3 service install
+sudo ~/.local/bin/t3 browser setup
 
 git config --global user.name "Sorawit Kongnurat"
 git config --global user.email work@mapringg.com
