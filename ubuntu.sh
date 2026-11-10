@@ -8,7 +8,7 @@ sudo timedatectl set-timezone Asia/Bangkok
 
 [ -x ~/.local/bin/mise ] || curl -fsSL https://mise.run/bash | sh
 PATH=~/.local/bin:$PATH
-mise use -g gh kubectl k9s yazi lazydocker pnpm
+mise use -g gh kubectl k9s yazi lazydocker pnpm npm:defuddle
 mise settings experimental=true
 mise settings minimum_release_age=0
 mise settings add idiomatic_version_file_enable_tools node
