@@ -42,5 +42,9 @@ MacBook Air M3.
 
 ## Clients
 
-The macOS and Windows setup scripts install Visual Studio Code. Sign in to Tailscale,
-install the Remote - SSH extension in VS Code, and connect to `mapring@ubuntu`.
+The macOS and Windows setup scripts install Visual Studio Code and T3 Code. Sign in to
+Tailscale, then:
+
+- **VS Code:** install the Remote - SSH extension and connect to `mapring@ubuntu`.
+- **T3 Code:** run `t3 pair --tailscale` on `ubuntu` and add the environment in the T3 Code
+  desktop app using the pairing URL or code.
