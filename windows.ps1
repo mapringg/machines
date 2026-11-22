@@ -1,7 +1,7 @@
 winget install --exact --silent --accept-source-agreements --accept-package-agreements `
     Tailscale.Tailscale Google.Chrome Microsoft.VisualStudioCode `
     WisprFlow.WisprFlow Valve.Steam Discord.Discord AgileBits.1Password `
-    T3Tools.T3Code
+    T3Tools.T3Code xAI.GrokBot Warp.Warp
 if ($env:COMPUTERNAME -ne 'WINDOWS') { Rename-Computer windows }
 $t = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
 Set-ItemProperty $t AppsUseLightTheme 0

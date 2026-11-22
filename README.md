@@ -42,8 +42,8 @@ MacBook Air M3.
 
 ## Clients
 
-The macOS and Windows setup scripts install Visual Studio Code and T3 Code. Sign in to
-Tailscale, then:
+The macOS and Windows setup scripts install Visual Studio Code, T3 Code, Grok Bot,
+and Warp. Sign in to Tailscale, then:
 
 - **VS Code:** install the Remote - SSH extension and connect to `mapring@ubuntu`.
 - **T3 Code:** run `t3 pair --tailscale` on `ubuntu` and add the environment in the T3 Code
