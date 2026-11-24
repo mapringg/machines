@@ -43,8 +43,10 @@ MacBook Air M3.
 ## Clients
 
 The macOS and Windows setup scripts install Visual Studio Code, T3 Code, Grok Bot,
-and Warp. Sign in to Tailscale, then:
+Warp, and the [Paper Mono](https://paper.design/mono) font. Sign in to Tailscale, then:
 
 - **VS Code:** install the Remote - SSH extension and connect to `mapring@ubuntu`.
 - **T3 Code:** run `t3 pair --tailscale` on `ubuntu` and add the environment in the T3 Code
   desktop app using the pairing URL or code.
+- **Paper Mono:** in T3 Code, pick it under Settings → Appearance → Monospace font, which also
+  covers the terminal. In Warp, pick it under Settings → Appearance → Text → Terminal font.
