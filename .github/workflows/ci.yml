@@ -18,7 +18,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: mapringg/standard/.github/actions/check-pr@567686f1cdc46cf498289a4a1855b3c2fdcfa988 # v1.10.0
+      - uses: mapringg/standard/.github/actions/check-pr@2da38877f9f3361e0847f11aa0c7b581163b6b10 # v1.11.0
       - run: |
           bash -n apple.sh && bash -n ubuntu.sh
       - shell: pwsh

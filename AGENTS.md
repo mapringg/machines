@@ -2,4 +2,5 @@
 
 ## Sources
 
-- Follow the [PR writing skill](https://github.com/mapringg/standard/blob/v1.10.0/.claude/skills/pr/SKILL.md) when starting a change or writing a pull request.
+- Use [PR writing](https://github.com/mapringg/standard/blob/v1.11.0/.claude/skills/pr/SKILL.md) when writing a pull request.
+- Follow [Capture](https://github.com/mapringg/standard/blob/v1.11.0/.claude/skills/capture/SKILL.md) when preparing pull request evidence.
