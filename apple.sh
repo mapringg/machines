@@ -5,11 +5,18 @@ export NONINTERACTIVE=1
 unset HOMEBREW_ASK
 
 [ -x /opt/homebrew/bin/brew ] || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-/opt/homebrew/bin/brew install btop ffmpeg jq lazygit mise
-/opt/homebrew/bin/brew install --cask --adopt visual-studio-code google-chrome wispr-flow 1password tailscale-app t3-code grok-bot warp font-paper-mono
+/opt/homebrew/bin/brew install btop dockutil ffmpeg jq lazygit mise
+/opt/homebrew/bin/brew install --cask --adopt visual-studio-code google-chrome wispr-flow 1password tailscale-app t3-code grok-bot warp orbstack font-paper-mono
 for k in ComputerName HostName LocalHostName; do sudo scutil --set $k apple; done
+defaults write -g AppleInterfaceStyle -string Dark
 defaults write -g KeyRepeat -int 2
 defaults write -g InitialKeyRepeat -int 15
+defaults write com.apple.dock show-recents -bool false
+/opt/homebrew/bin/dockutil --remove all --no-restart || true
+for app in "/Applications/Google Chrome.app" "/Applications/Grok Bot.app" "/Applications/T3 Code (Beta).app" "/Applications/Warp.app"; do
+	[[ -d "$app" ]] && /opt/homebrew/bin/dockutil --add "$app" --no-restart
+done
+killall Dock || true
 
 PATH=/opt/homebrew/bin:$PATH
 mise use -g gh kubectl k9s yazi lazydocker pnpm

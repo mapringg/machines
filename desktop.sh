@@ -104,3 +104,4 @@ fi
 
 nmcli radio wifi off 2>/dev/null || true
 rfkill block bluetooth 2>/dev/null || true
+tailscale set --accept-routes 2>/dev/null || true
