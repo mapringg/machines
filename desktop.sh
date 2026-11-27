@@ -5,7 +5,7 @@ tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
 t3_deb=$(curl -fsSL https://api.github.com/repos/pingdotgg/t3code/releases/latest |
-	jq -r '.assets[] | select(.name | endswith("-amd64.deb")) | .browser_download_url')
+	jq -r 'first(.assets[] | select(.name | endswith("-amd64.deb")) | .browser_download_url)')
 
 curl -fsSL "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb" -o "$tmp/chrome.deb"
 curl -fsSL "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64" -o "$tmp/vscode.deb"
@@ -24,10 +24,25 @@ mkdir -p ~/.local/share/fonts/paper-mono
 cp "$tmp"/paper-mono/paper-mono-v1.000/fonts/ttf/*.ttf ~/.local/share/fonts/paper-mono/
 fc-cache -f
 
-[ -x ~/.local/bin/t3 ] || curl -fsSL https://t3.codes/install.sh | sh
-grep -q 'HOME/.local/bin' ~/.bashrc || echo 'export PATH="$HOME/.local/bin:$PATH"' >>~/.bashrc
-grep -q 'mise activate bash' ~/.bashrc || echo 'eval "$(~/.local/bin/mise activate bash)"' >>~/.bashrc
-grep -q 'alias reboot-windows=' ~/.bashrc || echo 'alias reboot-windows="sudo grub-reboot \"Windows Boot Manager\" && sudo reboot"' >>~/.bashrc
+# GRUB dual-boot: Ubuntu default, 5s menu, os-prober enabled, dynamic reboot-windows helper
+for kv in \
+	"GRUB_DEFAULT=saved" \
+	"GRUB_SAVEDEFAULT=false" \
+	"GRUB_DISABLE_OS_PROBER=false" \
+	"GRUB_TIMEOUT_STYLE=menu" \
+	"GRUB_TIMEOUT=5"; do
+	k="${kv%%=*}"
+	if sudo grep -qE "^#*${k}=" /etc/default/grub; then
+		sudo sed -i "s|^#*${k}=.*|${kv}|" /etc/default/grub
+	else
+		echo "$kv" | sudo tee -a /etc/default/grub >/dev/null
+	fi
+done
+sudo update-grub
+sed -i '/^alias reboot-windows=/d; /^reboot-windows()/d' ~/.bashrc
+cat <<'EOF' >>~/.bashrc
+reboot-windows() { local e; e=$(sudo grep -oP "menuentry '\KWindows Boot Manager[^']*" /boot/grub/grub.cfg | head -n 1); [[ -n "$e" ]] || { echo "Windows Boot Manager entry not found in /boot/grub/grub.cfg" >&2; return 1; }; sudo grub-reboot "$e" && sudo reboot; }
+EOF
 
 # Hide btop from GNOME App Grid
 mkdir -p ~/.local/share/applications
@@ -49,6 +64,7 @@ specs = [
     ("t3code.desktop", "/usr/share/icons/hicolor/512x512/apps/t3code.png", "t3code.png", False),
     ("dev.warp.Warp.desktop", "/usr/share/icons/hicolor/512x512/apps/dev.warp.Warp.png", "dev.warp.Warp.png", False),
     ("com.microsoft.VSCode.desktop", "/usr/share/pixmaps/vscode.png", "vscode.png", False),
+    ("code.desktop", "/usr/share/pixmaps/vscode.png", "vscode.png", False),
     ("grok-bot.desktop", "/usr/share/icons/hicolor/512x512/apps/grok-bot.png", "grok-bot.png", True),
 ]
 icon_dir = os.path.expanduser("~/.local/share/icons/hicolor/512x512/apps")
@@ -87,26 +103,33 @@ update-desktop-database ~/.local/share/applications 2>/dev/null || true
 # GNOME desktop polish: dark mode, pure black OLED background, fast key repeat, OLED screen blank, no suspend, vanilla shell, clean dock
 export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=/run/user/$(id -u)/bus}"
 if command -v gsettings >/dev/null 2>&1; then
-	gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' || true
-	gsettings set org.gnome.desktop.background picture-options 'none' || true
-	gsettings set org.gnome.desktop.background primary-color '#000000' || true
-	gsettings set org.gnome.desktop.background color-shading-type 'solid' || true
-	gsettings set org.gnome.desktop.background picture-uri '' || true
-	gsettings set org.gnome.desktop.background picture-uri-dark '' || true
-	gsettings set org.gnome.desktop.peripherals.keyboard delay 225 || true
-	gsettings set org.gnome.desktop.peripherals.keyboard repeat-interval 30 || true
-	gsettings set org.gnome.desktop.session idle-delay 300 || true
-	gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing' || true
-	gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 'nothing' || true
-	gsettings set org.gnome.shell disable-user-extensions true || true
-	gsettings set org.gnome.shell app-picker-layout "[]" || true
+	gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+	gsettings set org.gnome.desktop.background picture-options 'none'
+	gsettings set org.gnome.desktop.background primary-color '#000000'
+	gsettings set org.gnome.desktop.background color-shading-type 'solid'
+	gsettings set org.gnome.desktop.background picture-uri ''
+	gsettings set org.gnome.desktop.background picture-uri-dark ''
+	gsettings set org.gnome.desktop.peripherals.keyboard delay 225
+	gsettings set org.gnome.desktop.peripherals.keyboard repeat-interval 30
+	gsettings set org.gnome.desktop.session idle-delay 300
+	gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
+	gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 'nothing'
+	gsettings set org.gnome.shell disable-user-extensions true
+	gsettings set org.gnome.shell app-picker-layout "[]"
 	if [[ -f /usr/share/applications/grok-bot.desktop ]]; then
-		gsettings set org.gnome.shell favorite-apps "['google-chrome.desktop', 'grok-bot.desktop', 't3code.desktop', 'dev.warp.Warp.desktop']" || true
+		gsettings set org.gnome.shell favorite-apps "['google-chrome.desktop', 'grok-bot.desktop', 't3code.desktop', 'dev.warp.Warp.desktop']"
 	else
-		gsettings set org.gnome.shell favorite-apps "['google-chrome.desktop', 't3code.desktop', 'dev.warp.Warp.desktop']" || true
+		gsettings set org.gnome.shell favorite-apps "['google-chrome.desktop', 't3code.desktop', 'dev.warp.Warp.desktop']"
 	fi
 fi
 
-nmcli radio wifi off 2>/dev/null || true
-rfkill block bluetooth 2>/dev/null || true
-tailscale set --accept-routes 2>/dev/null || true
+sudo nmcli radio wifi off 2>/dev/null || true
+sudo rfkill block bluetooth 2>/dev/null || true
+sudo tailscale set --operator="$USER" --accept-routes
+
+echo "=== VERIFY desktop ==="
+gsettings get org.gnome.desktop.interface color-scheme
+gsettings get org.gnome.desktop.session idle-delay
+gsettings get org.gnome.shell favorite-apps
+nmcli radio wifi
+tailscale debug prefs 2>/dev/null | jq -r '"RouteAll=\(.RouteAll)"' || true
