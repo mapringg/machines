@@ -13,9 +13,38 @@ Getorli GT105, 8845HS, 32GB.
 5. `gh auth login`, `sudo pro attach <token>`
 6. Tailscale: set `--operator=$USER --advertise-routes=<company subnets>` and approve the routes.
 
+## desktop
+
+7800X3D, 32GB, 2nd 1TB NVMe (dual-boot with `windows`), MSI PRO B650-P WIFI.
+
+1. BIOS: Enable `Resume By PCI-E Device` (Wake-on-LAN), disable `ErP Ready`, put the 2nd NVMe first in boot order.
+2. Ubuntu Desktop 26.10: install on the 2nd NVMe with its own EFI partition and third-party graphics drivers enabled.
+   Hostname `desktop`, user `mapring`. Disable automatic suspend in Power settings.
+3. GRUB dual-boot: set `GRUB_DISABLE_OS_PROBER=false` in `/etc/default/grub` and run `sudo update-grub`.
+   One-shot reboot to Windows for gaming: `sudo grub-reboot "Windows Boot Manager" && sudo reboot`.
+4. Wake-on-LAN (Ethernet): `nmcli connection modify <conn> 802-3-ethernet.wake-on-lan magic`.
+   Wake from `ubuntu` with `wakeonlan <MAC>`.
+5. `curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up --ssh`
+6. `bash <(curl -fsSL https://raw.githubusercontent.com/mapringg/machines/main/ubuntu.sh)`,
+   then log out and in.
+7. `gh auth login`, then `t3 pair --tailscale` to link as a T3 Code environment.
+
+## infra
+
+Beelink N150, 16GB, 500GB. Always-on Docker services (Wallos and shared dev DBs).
+
+1. BIOS: Auto Power ON.
+2. Ubuntu Server 26.04 LTS: whole disk, LVM, no encryption, grow `ubuntu-lv` to max.
+   Hostname `infra`, user `mapring`, no OpenSSH.
+3. `curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up --ssh`
+4. `bash <(curl -fsSL https://raw.githubusercontent.com/mapringg/machines/main/ubuntu.sh)`,
+   then log out and in.
+5. Wallos: copy `wallos/compose.yml` to `~/wallos/`, extract the Wallos `data/` backup alongside it,
+   run `docker compose up -d`, and expose over Tailscale with `sudo tailscale serve --bg 8282`.
+
 ## windows
 
-7800X3D, 1.9TB NVMe, MSI PRO B650-P WIFI.
+7800X3D, 32GB, 1.9TB NVMe, MSI PRO B650-P WIFI.
 
 1. Rufus: GPT/UEFI, no online account. Wipe both disks, install to the 1907GB drive,
    offline account `mapring`.
