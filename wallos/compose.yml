@@ -4,7 +4,7 @@ services:
     container_name: wallos
     restart: unless-stopped
     ports:
-      - "8282:80"
+      - "127.0.0.1:8282:80"
     environment:
       TZ: Asia/Bangkok
     volumes:
