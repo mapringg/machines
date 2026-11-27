@@ -64,9 +64,10 @@ BIOS: EXPO 1, Re-Size BAR, Secure Boot, fTPM on, CSM off, `Resume By PCI-E Devic
 
 ## apple
 
-MacBook Air M3.
+MacBook Air M3, 16GB, 512GB.
 
 1. `bash <(curl -fsSL https://raw.githubusercontent.com/mapringg/machines/main/apple.sh)`
+2. `gh auth login`
 
 ## clients
 
@@ -74,7 +75,7 @@ The macOS and Windows setup scripts install Visual Studio Code, T3 Code, Grok Bo
 Warp, and the [Paper Mono](https://paper.design/mono) font. Sign in to Tailscale, then:
 
 - **VS Code:** install the Remote - SSH extension and connect to `mapring@ubuntu` or `mapring@desktop`.
-- **T3 Code:** run `t3 pair --tailscale` on `ubuntu` / `desktop` and add each environment in the
-  T3 Code desktop app using the pairing URL or code.
+- **T3 Code:** run `t3 pair --tailscale` on `ubuntu` / `desktop` (or use `apple` locally) and add
+  each environment in the T3 Code desktop app using the pairing URL or code.
 - **Paper Mono:** in T3 Code, pick it under Settings → Appearance → Monospace font, which also
   covers the terminal. In Warp, pick it under Settings → Appearance → Text → Terminal font.
