@@ -24,3 +24,13 @@ Set-ItemProperty 'HKCU:\Control Panel\Mouse' MouseThreshold2 0
 $g = 'HKCU:\Software\Microsoft\DirectX\UserGpuPreferences'
 if (!(Test-Path $g)) { New-Item $g | Out-Null }
 Set-ItemProperty $g DirectXUserGlobalSettings 'SwapEffectUpgradeEnable=1;'
+Set-ItemProperty 'HKCU:\Control Panel\Colors' Background '0 0 0'
+Set-ItemProperty 'HKCU:\Control Panel\Desktop' WallPaper ''
+Set-ItemProperty 'HKCU:\Control Panel\Keyboard' KeyboardDelay '0'
+Set-ItemProperty 'HKCU:\Control Panel\Keyboard' KeyboardSpeed '31'
+Set-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' TaskbarDa 0
+Set-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' ShowTaskViewButton 0
+Set-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Search' SearchboxTaskbarMode 0
+powercfg /change monitor-timeout-ac 5
+powercfg /change standby-timeout-ac 0
+Disable-NetAdapter -Name 'Wi-Fi' -Confirm:$false -ErrorAction SilentlyContinue

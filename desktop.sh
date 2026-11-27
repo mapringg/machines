@@ -84,10 +84,15 @@ PY
 gtk-update-icon-cache -f -t ~/.local/share/icons/hicolor 2>/dev/null || true
 update-desktop-database ~/.local/share/applications 2>/dev/null || true
 
-# GNOME desktop polish: dark mode, fast key repeat, OLED screen blank, no suspend, vanilla shell, clean dock
+# GNOME desktop polish: dark mode, pure black OLED background, fast key repeat, OLED screen blank, no suspend, vanilla shell, clean dock
 export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=/run/user/$(id -u)/bus}"
 if command -v gsettings >/dev/null 2>&1; then
 	gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' || true
+	gsettings set org.gnome.desktop.background picture-options 'none' || true
+	gsettings set org.gnome.desktop.background primary-color '#000000' || true
+	gsettings set org.gnome.desktop.background color-shading-type 'solid' || true
+	gsettings set org.gnome.desktop.background picture-uri '' || true
+	gsettings set org.gnome.desktop.background picture-uri-dark '' || true
 	gsettings set org.gnome.desktop.peripherals.keyboard delay 225 || true
 	gsettings set org.gnome.desktop.peripherals.keyboard repeat-interval 30 || true
 	gsettings set org.gnome.desktop.session idle-delay 300 || true

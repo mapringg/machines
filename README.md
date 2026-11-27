@@ -56,10 +56,13 @@ BIOS: EXPO 1, Re-Size BAR, Secure Boot, fTPM on, CSM off, `Resume By PCI-E Devic
 
 1. Rufus: GPT/UEFI, no online account. Install to the 2TB NVMe, offline account `mapring`.
 2. NVIDIA driver only, rest from Windows Update.
-3. Admin PowerShell: `irm https://raw.githubusercontent.com/mapringg/machines/main/windows.ps1 | iex`
-4. NVIDIA 3D settings: Max Frame Rate 237, V-Sync On, Low Latency On.
-5. HDR on, HDR Calibration with monitor on True Black 400.
-6. Games: V-Sync off, Reflex On.
+3. Install Tailscale, then enable OpenSSH Server in Admin PowerShell:
+   `Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0; Start-Service sshd; Set-Service -Name sshd -StartupType Automatic`
+4. Hand off to `ubuntu` agent: runs `windows.ps1` (apps, Paper Mono, dark mode, pure black OLED
+   wallpaper, fast key repeat, 5-min display off, Wi-Fi off, mouse/GPU tweaks).
+5. NVIDIA 3D settings: Max Frame Rate 237, V-Sync On, Low Latency On.
+6. HDR on, HDR Calibration with monitor on True Black 400.
+7. Games: V-Sync off, Reflex On.
 
 ## apple
 
