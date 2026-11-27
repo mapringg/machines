@@ -22,7 +22,7 @@ jobs:
         run: docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.30.1 dir /repo --no-banner --redact
       - uses: mapringg/standard/.github/actions/check-pr@2da38877f9f3361e0847f11aa0c7b581163b6b10 # v1.11.0
       - run: |
-          bash -n apple.sh && bash -n ubuntu.sh
+          bash -n apple.sh && bash -n desktop.sh && bash -n ubuntu.sh
       - shell: pwsh
         run: |
           $parseErrors = $null

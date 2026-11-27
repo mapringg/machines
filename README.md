@@ -51,7 +51,8 @@ BIOS: EXPO 1, Re-Size BAR, Secure Boot, fTPM on, CSM off, `Resume By PCI-E Devic
 4. `curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up --ssh`
 5. `bash <(curl -fsSL https://raw.githubusercontent.com/mapringg/machines/main/ubuntu.sh)`,
    then log out and in.
-6. `gh auth login`
+6. `bash <(curl -fsSL https://raw.githubusercontent.com/mapringg/machines/main/desktop.sh)`
+7. `gh auth login`, then `t3 up` to run the background T3 Code server.
 
 ### windows
 
@@ -71,8 +72,9 @@ MacBook Air M3, 16GB, 512GB.
 
 ## clients
 
-The macOS and Windows setup scripts install Visual Studio Code, T3 Code, Grok Bot,
-Warp, and the [Paper Mono](https://paper.design/mono) font. Sign in to Tailscale, then:
+The macOS, Windows, and Ubuntu Desktop setup scripts install Google Chrome, Visual Studio Code,
+1Password, T3 Code, Warp, and the [Paper Mono](https://paper.design/mono) font (plus Wispr Flow
+and Grok Bot on macOS/Windows). Sign in to Tailscale, then:
 
 - **VS Code:** install the Remote - SSH extension and connect to `mapring@ubuntu` or `mapring@desktop`.
 - **T3 Code:** run `t3 pair --tailscale` on `ubuntu` / `desktop` (or use `apple` locally) and add
