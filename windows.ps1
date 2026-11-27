@@ -24,8 +24,14 @@ Set-ItemProperty 'HKCU:\Control Panel\Mouse' MouseThreshold2 0
 $g = 'HKCU:\Software\Microsoft\DirectX\UserGpuPreferences'
 if (!(Test-Path $g)) { New-Item $g | Out-Null }
 Set-ItemProperty $g DirectXUserGlobalSettings 'SwapEffectUpgradeEnable=1;'
+$wp = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Wallpapers'
+if (!(Test-Path $wp)) { New-Item $wp -Force | Out-Null }
+Set-ItemProperty $wp BackgroundType 1
+$sp = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\DesktopSpotlight\Settings'
+if (Test-Path $sp) { Set-ItemProperty $sp EnabledState 0 -ErrorAction SilentlyContinue }
 Set-ItemProperty 'HKCU:\Control Panel\Colors' Background '0 0 0'
 Set-ItemProperty 'HKCU:\Control Panel\Desktop' WallPaper ''
+Remove-Item "$env:APPDATA\Microsoft\Windows\Themes\TranscodedWallpaper" -Force -ErrorAction SilentlyContinue
 Set-ItemProperty 'HKCU:\Control Panel\Keyboard' KeyboardDelay '0'
 Set-ItemProperty 'HKCU:\Control Panel\Keyboard' KeyboardSpeed '31'
 Set-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' TaskbarDa 0
