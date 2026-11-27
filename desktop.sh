@@ -14,7 +14,8 @@ curl -fsSL "https://app.warp.dev/download?package=deb" -o "$tmp/warp.deb"
 curl -fsSL "$t3_deb" -o "$tmp/t3-code.deb"
 
 sudo apt update
-sudo apt install -y "$tmp/chrome.deb" "$tmp/vscode.deb" "$tmp/1password.deb" "$tmp/warp.deb" "$tmp/t3-code.deb"
+sudo DEBIAN_FRONTEND=noninteractive apt install -y python3-pil \
+	"$tmp/chrome.deb" "$tmp/vscode.deb" "$tmp/1password.deb" "$tmp/warp.deb" "$tmp/t3-code.deb"
 
 curl -fsSL "https://github.com/paper-design/paper-mono/releases/download/v1.000/paper-mono-v1.000.zip" -o "$tmp/paper-mono.zip"
 echo "8642652985dc87bf4cfd07c89942899e611c3c774fc25284c0dd4fe86a993a13  $tmp/paper-mono.zip" | sha256sum -c -
@@ -22,3 +23,84 @@ unzip -qo "$tmp/paper-mono.zip" -d "$tmp/paper-mono"
 mkdir -p ~/.local/share/fonts/paper-mono
 cp "$tmp"/paper-mono/paper-mono-v1.000/fonts/ttf/*.ttf ~/.local/share/fonts/paper-mono/
 fc-cache -f
+
+[ -x ~/.local/bin/t3 ] || curl -fsSL https://t3.codes/install.sh | sh
+grep -q 'HOME/.local/bin' ~/.bashrc || echo 'export PATH="$HOME/.local/bin:$PATH"' >>~/.bashrc
+grep -q 'mise activate bash' ~/.bashrc || echo 'eval "$(~/.local/bin/mise activate bash)"' >>~/.bashrc
+grep -q 'alias reboot-windows=' ~/.bashrc || echo 'alias reboot-windows="sudo grub-reboot \"Windows Boot Manager\" && sudo reboot"' >>~/.bashrc
+
+# Hide btop from GNOME App Grid
+mkdir -p ~/.local/share/applications
+if [[ -f /usr/share/applications/btop.desktop ]]; then
+	cp /usr/share/applications/btop.desktop ~/.local/share/applications/btop.desktop
+	grep -q '^NoDisplay=' ~/.local/share/applications/btop.desktop &&
+		sed -i 's/^NoDisplay=.*/NoDisplay=true/' ~/.local/share/applications/btop.desktop ||
+		echo 'NoDisplay=true' >>~/.local/share/applications/btop.desktop
+fi
+
+# Normalize app icons to match 1Password's 476x476 (93%) proportions inside 512x512
+python3 - <<'PY'
+import os
+from PIL import Image, ImageDraw
+
+CANVAS, TARGET = 512, 476
+specs = [
+    ("google-chrome.desktop", "/usr/share/icons/hicolor/256x256/apps/google-chrome.png", "google-chrome.png", False),
+    ("t3code.desktop", "/usr/share/icons/hicolor/512x512/apps/t3code.png", "t3code.png", False),
+    ("dev.warp.Warp.desktop", "/usr/share/icons/hicolor/512x512/apps/dev.warp.Warp.png", "dev.warp.Warp.png", False),
+    ("com.microsoft.VSCode.desktop", "/usr/share/pixmaps/vscode.png", "vscode.png", False),
+    ("grok-bot.desktop", "/usr/share/icons/hicolor/512x512/apps/grok-bot.png", "grok-bot.png", True),
+]
+icon_dir = os.path.expanduser("~/.local/share/icons/hicolor/512x512/apps")
+app_dir = os.path.expanduser("~/.local/share/applications")
+os.makedirs(icon_dir, exist_ok=True)
+os.makedirs(app_dir, exist_ok=True)
+
+for desktop_file, src_icon, out_name, round_corners in specs:
+    src_desktop = os.path.join("/usr/share/applications", desktop_file)
+    if not (os.path.exists(src_desktop) and os.path.exists(src_icon)):
+        continue
+    im = Image.open(src_icon).convert("RGBA")
+    bbox = im.getbbox()
+    if bbox:
+        im = im.crop(bbox)
+    w, h = im.size
+    scale = min(TARGET / w, TARGET / h)
+    nw, nh = round(w * scale), round(h * scale)
+    resized = im.resize((nw, nh), Image.LANCZOS)
+    out = Image.new("RGBA", (CANVAS, CANVAS), (0, 0, 0, 0))
+    ox, oy = (CANVAS - nw) // 2, (CANVAS - nh) // 2
+    if round_corners:
+        mask = Image.new("L", (nw, nh), 0)
+        ImageDraw.Draw(mask).rounded_rectangle((0, 0, nw - 1, nh - 1), radius=int(min(nw, nh) * 0.225), fill=255)
+        out.paste(resized, (ox, oy), mask)
+    else:
+        out.paste(resized, (ox, oy), resized)
+    dst_icon = os.path.join(icon_dir, out_name)
+    out.save(dst_icon)
+    lines = [f"Icon={dst_icon}\n" if l.startswith("Icon=") else l for l in open(src_desktop)]
+    open(os.path.join(app_dir, desktop_file), "w").writelines(lines)
+PY
+gtk-update-icon-cache -f -t ~/.local/share/icons/hicolor 2>/dev/null || true
+update-desktop-database ~/.local/share/applications 2>/dev/null || true
+
+# GNOME desktop polish: dark mode, fast key repeat, OLED screen blank, no suspend, vanilla shell, clean dock
+export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=/run/user/$(id -u)/bus}"
+if command -v gsettings >/dev/null 2>&1; then
+	gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' || true
+	gsettings set org.gnome.desktop.peripherals.keyboard delay 225 || true
+	gsettings set org.gnome.desktop.peripherals.keyboard repeat-interval 30 || true
+	gsettings set org.gnome.desktop.session idle-delay 300 || true
+	gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing' || true
+	gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 'nothing' || true
+	gsettings set org.gnome.shell disable-user-extensions true || true
+	gsettings set org.gnome.shell app-picker-layout "[]" || true
+	if [[ -f /usr/share/applications/grok-bot.desktop ]]; then
+		gsettings set org.gnome.shell favorite-apps "['google-chrome.desktop', 'grok-bot.desktop', 't3code.desktop', 'dev.warp.Warp.desktop']" || true
+	else
+		gsettings set org.gnome.shell favorite-apps "['google-chrome.desktop', 't3code.desktop', 'dev.warp.Warp.desktop']" || true
+	fi
+fi
+
+nmcli radio wifi off 2>/dev/null || true
+rfkill block bluetooth 2>/dev/null || true
