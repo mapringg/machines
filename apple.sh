@@ -17,6 +17,9 @@ for app in "/Applications/Google Chrome.app" "/Applications/Grok Bot.app" "/Appl
 	[[ -d "$app" ]] && /opt/homebrew/bin/dockutil --add "$app" --no-restart
 done
 killall Dock || true
+if [[ -f "/System/Library/Desktop Pictures/Solid Colors/Black.png" ]]; then
+	osascript -e 'tell application "System Events" to tell every desktop to set picture to "/System/Library/Desktop Pictures/Solid Colors/Black.png"' || true
+fi
 
 PATH=/opt/homebrew/bin:$PATH
 mise use -g gh kubectl k9s yazi lazydocker pnpm
