@@ -1,0 +1,12 @@
+services:
+  wallos:
+    image: bellamy/wallos:latest
+    container_name: wallos
+    restart: unless-stopped
+    ports:
+      - "8282:80"
+    environment:
+      TZ: Asia/Bangkok
+    volumes:
+      - ./data/db:/var/www/html/db
+      - ./data/logos:/var/www/html/images/uploads/logos
