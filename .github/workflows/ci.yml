@@ -20,7 +20,7 @@ jobs:
           persist-credentials: false
       - name: Scan for leaks
         run: docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.30.1 dir /repo --no-banner --redact
-      - uses: mapringg/standard/.github/actions/check-pr@2da38877f9f3361e0847f11aa0c7b581163b6b10 # v1.11.0
+      - uses: mapringg/standard/.github/actions/check-pr@28dff962ef8ca9f8f1f275ac60cee68ed56372af # v1.13.0
       - run: |
           bash -n apple.sh && bash -n desktop.sh && bash -n ubuntu.sh
       - shell: pwsh
