@@ -24,7 +24,6 @@ mkdir -p ~/.local/share/fonts/paper-mono
 cp "$tmp"/paper-mono/paper-mono-v1.000/fonts/ttf/*.ttf ~/.local/share/fonts/paper-mono/
 fc-cache -f
 
-# GRUB dual-boot: Ubuntu default, 5s menu, os-prober enabled, dynamic reboot-windows helper
 for kv in \
 	"GRUB_DEFAULT=saved" \
 	"GRUB_SAVEDEFAULT=false" \
@@ -40,9 +39,6 @@ for kv in \
 done
 sudo update-grub
 sed -i '/^alias reboot-windows=/d; /^reboot-windows()/d' ~/.bashrc
-cat <<'EOF' >>~/.bashrc
-reboot-windows() { local e; e=$(sudo grep -oP "menuentry '\KWindows Boot Manager[^']*" /boot/grub/grub.cfg | head -n 1); [[ -n "$e" ]] || { echo "Windows Boot Manager entry not found in /boot/grub/grub.cfg" >&2; return 1; }; sudo grub-reboot "$e" && sudo reboot; }
-EOF
 
 # Hide btop from GNOME App Grid
 mkdir -p ~/.local/share/applications
